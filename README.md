@@ -8,6 +8,7 @@ Azure SRE Agent deployed to East US 2 via GitHub Actions. Provides automated mon
 graph TB
     subgraph SRE["SRE Agent (sre-poc-ai-my)"]
         Agent[SRE Agent Core]
+        WH[Webhook Server :8080]
         Sched[Task Scheduler]
         IM[Incident Manager]
 
@@ -23,6 +24,11 @@ graph TB
         KB[Knowledge Base]
         GH[GitHub Connector]
         MON[Azure Monitor Client]
+    end
+
+    subgraph AzMon["Azure Monitor"]
+        AG[Action Group<br/>sre-poc-ai-my-ag]
+        AR[18 Metric Alert Rules]
     end
 
     subgraph Azure["Monitored Azure Resources"]
@@ -49,6 +55,17 @@ graph TB
     Agent --> IM
     Agent --> MON
     Agent --> GH
+
+    AR -.evaluates.-> SQL
+    AR -.evaluates.-> COSMOS
+    AR -.evaluates.-> STORAGE
+    AR -.evaluates.-> API
+    AR -.evaluates.-> APIM
+    AR -.evaluates.-> FOUNDRY
+    AR -.evaluates.-> SWA
+    AR --fires--> AG
+    AG --webhook POST--> WH
+    WH --> IM
 
     DB_SA --> SQL
     DB_SA --> COSMOS
@@ -96,6 +113,8 @@ graph LR
     SRE -.monitors.-> COSMOS
     SRE -.monitors.-> STORAGE
     SRE -.monitors.-> FOUNDRY
+
+    AzMon[Azure Monitor<br/>Alert Rules] ==webhook==> SRE
 ```
 
 ## Resource Details
@@ -243,6 +262,68 @@ graph LR
 | `cost_analysis` | Every 6 hours | Cost optimization and right-sizing analysis |
 | `daily_report` | Daily | Comprehensive SRE summary report |
 
+## Azure Monitor Integration
+
+The incident platform is connected to Azure Monitor via metric alert rules and an action group that delivers webhook notifications to the SRE agent.
+
+### Alert Flow
+
+```mermaid
+flowchart LR
+    R[Azure Resource] -->|metric crosses threshold| AR[Alert Rule]
+    AR -->|fires| AG[Action Group<br/>sre-poc-ai-my-ag]
+    AG -->|POST common alert schema| WH[/api/alerts/webhook/]
+    WH -->|maps alert rule to plan| IM[Incident Manager]
+    IM -->|creates| INC[Incident + Runbook]
+```
+
+### Action Group
+
+| Property | Value |
+|---|---|
+| **Name** | `sre-poc-ai-my-ag` |
+| **Type** | Webhook |
+| **Target** | `https://<container-app-fqdn>/api/alerts/webhook` |
+| **Schema** | Common Alert Schema |
+
+### Alert Rules (18 total)
+
+| Alert Rule | Resource | Metric | Condition | Severity | Incident Plan |
+|---|---|---|---|---|---|
+| `sre-sql-high-dtu` | SQL DB | DTU % | > 90% | SEV2 | `sql_high_dtu` |
+| `sre-sql-connection-failures` | SQL DB | Failed connections | > 20 | SEV1 | `sql_connection_failures` |
+| `sre-sql-deadlocks` | SQL DB | Deadlocks | > 5 | SEV2 | `sql_deadlocks` |
+| `sre-sql-storage-critical` | SQL DB | Storage % | > 90% | SEV2 | `sql_storage_critical` |
+| `sre-cosmos-throttling` | Cosmos DB | Normalized RU % | > 90% | SEV2 | `cosmos_throttling` |
+| `sre-cosmos-replication-lag` | Cosmos DB | Replication latency | > 500ms | SEV2 | `cosmos_replication_lag` |
+| `sre-storage-availability-drop` | Storage | Availability | < 99% | SEV1 | `storage_availability_drop` |
+| `sre-storage-high-latency` | Storage | E2E Latency | > 500ms | SEV3 | `storage_high_latency` |
+| `sre-api-5xx-spike` | API | Http5xx | > 20 | SEV1 | `api_5xx_spike` |
+| `sre-api-high-response-time` | API | Response time | > 3s | SEV2 | `api_high_response_time` |
+| `sre-api-cpu-exhaustion` | API | CPU % | > 90% | SEV2 | `api_resource_exhaustion` |
+| `sre-api-memory-exhaustion` | API | Memory % | > 90% | SEV2 | `api_resource_exhaustion` |
+| `sre-apim-capacity-high` | APIM | Capacity | > 90% | SEV2 | `apim_capacity_high` |
+| `sre-apim-backend-slow` | APIM | Backend duration | > 5000ms | SEV2 | `apim_backend_slow` |
+| `sre-apim-auth-spike` | APIM | Unauthorized | > 100 | SEV2 | `apim_auth_spike` |
+| `sre-foundry-high-error-rate` | AI Foundry | Total errors | > 20 | SEV2 | `foundry_high_error_rate` |
+| `sre-foundry-high-latency` | AI Foundry | Latency | > 5000ms | SEV3 | `foundry_high_latency` |
+| `sre-frontend-function-errors` | Frontend | Function errors | > 20 | SEV2 | `frontend_function_errors` |
+
+All alert rules evaluate every 5 minutes with a 5-minute window.
+
+### HTTP Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/alerts/webhook` | Azure Monitor common alert schema webhook receiver |
+| `GET` | `/api/health` | Agent health check (resources, repos, incidents, scheduler) |
+| `GET` | `/api/dashboard` | Azure Monitor metrics dashboard summary |
+| `GET` | `/api/incidents` | Active incidents list |
+
+### IAM Roles
+
+The managed identity (`sre-poc-ai-my-identity`) is assigned **Monitoring Reader** on the resource group, allowing it to query Azure Monitor metrics for all Sales POC resources.
+
 ## Incident Response Plans
 
 ### SQL Database (4 plans)
@@ -293,21 +374,23 @@ graph LR
 ## Project Structure
 
 ```
-├── .github/workflows/deploy.yml   # CI/CD pipeline
+├── .github/workflows/deploy.yml   # CI/CD pipeline (build + deploy + alerts)
 ├── infra/
-│   ├── main.bicep                 # Infrastructure as Code
-│   └── main.bicepparam            # Bicep parameters
+│   ├── main.bicep                 # Container App, Log Analytics, Identity, RBAC
+│   ├── main.bicepparam            # Bicep parameters
+│   └── alerts.bicep               # Azure Monitor alert rules + action group
 ├── src/
 │   ├── __init__.py
-│   ├── agent.py                   # SRE agent core + task registration
+│   ├── agent.py                   # SRE agent core + webhook processing
 │   ├── config.py                  # Configuration / settings
 │   ├── github_connector.py        # GitHub repo monitoring
 │   ├── incidents.py               # Incident plans + manager
 │   ├── knowledge_base.py          # Architecture, troubleshooting, procedures
-│   ├── main.py                    # Entry point
+│   ├── main.py                    # Entry point + HTTP server startup
 │   ├── metrics.py                 # Metric definitions + SLA targets
 │   ├── monitors.py                # Azure Monitor resource queries
 │   ├── scheduler.py               # Async scheduled task runner
+│   ├── server.py                  # aiohttp webhook + health endpoints
 │   └── subagents.py               # Specialized analysis subagents
 ├── Dockerfile
 ├── requirements.txt
@@ -355,4 +438,5 @@ python -m src.main
 Pushing to `main` triggers the GitHub Actions workflow which:
 
 1. **Build** – Lints code, builds Docker image, pushes to GHCR.
-2. **Deploy** – Logs into Azure via OIDC, deploys Bicep template to `ai-myaacoub` resource group.
+2. **Deploy App** – Logs into Azure via OIDC, deploys `main.bicep` (Container App + Monitoring Reader role).
+3. **Deploy Alerts** – Deploys `alerts.bicep` (18 metric alert rules + action group webhook → Container App).

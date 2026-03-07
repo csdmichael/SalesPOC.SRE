@@ -93,6 +93,14 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'GITHUB_ORG'
               value: 'csdmichael'
             }
+            {
+              name: 'AZURE_SUBSCRIPTION_ID'
+              value: subscription().subscriptionId
+            }
+            {
+              name: 'AZURE_RESOURCE_GROUP'
+              value: resourceGroup().name
+            }
           ]
         }
       ]
@@ -101,6 +109,18 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         maxReplicas: 3
       }
     }
+  }
+}
+
+// ─── Monitoring Reader role for querying Azure Monitor metrics ───
+var monitoringReaderRoleId = '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
+
+resource monitoringReaderAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(managedIdentity.id, monitoringReaderRoleId, resourceGroup().id)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', monitoringReaderRoleId)
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 

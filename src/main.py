@@ -3,8 +3,11 @@
 import asyncio
 import logging
 
+from aiohttp import web
+
 from src.agent import SREAgent, configure_monitoring
 from src.config import settings
+from src.server import create_app
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,7 +34,16 @@ async def main() -> None:
         status = "OK" if result.get("success") else "FAILED"
         logger.info("  [%s] %s: %s", status, name, result.get("findings", [result.get("error", "")]))
 
-    # Start the scheduler loop
+    # Start HTTP server for Azure Monitor webhook alerts
+    app = create_app(agent)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8080)
+    await site.start()
+    logger.info("HTTP server started on port 8080")
+    logger.info("Webhook endpoint: POST /api/alerts/webhook")
+
+    # Start the scheduler loop (runs indefinitely)
     logger.info("Starting scheduled task loop...")
     await agent.scheduler.start()
 

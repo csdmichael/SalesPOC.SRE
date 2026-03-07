@@ -96,6 +96,7 @@ jobs:
           REPO: ${{ github.repository }}
 
       - name: Deploy Bicep template
+        id: deploy-app
         uses: azure/arm-deploy@v2
         with:
           subscriptionId: ${{ env.AZURE_SUBSCRIPTION_ID }}
@@ -107,6 +108,15 @@ jobs:
             containerImage=${{ env.REGISTRY }}/${{ steps.lower.outputs.image_name }}:latest
             appInsightsConnectionString=${{ secrets.APP_INSIGHTS_CONNECTION_STRING }}
 
+      - name: Deploy Azure Monitor alert rules
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+          template: ./infra/alerts.bicep
+          parameters: >
+            webhookUrl=https://${{ steps.deploy-app.outputs.containerAppFqdn }}/api/alerts/webhook
+
       - name: Verify deployment
         run: |
           echo "Verifying agent deployment..."
@@ -116,3 +126,16 @@ jobs:
             --resource-type "Microsoft.App/containerApps" \
             --query "{name:name, provisioningState:properties.provisioningState}" \
             --output table
+          echo ""
+          echo "Verifying alert rules..."
+          az monitor metrics alert list \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "[].{name:name, severity:severity, enabled:enabled}" \
+            --output table
+          echo ""
+          echo "Verifying action group..."
+          az monitor action-group show \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name sre-poc-ai-my-ag \
+            --query "{name:name, enabled:enabled, webhooks:webhookReceivers[].serviceUri}" \
+            --output json

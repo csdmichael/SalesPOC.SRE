@@ -162,3 +162,63 @@ class SREAgent:
     async def run_analysis(self) -> dict:
         """Run a full analysis using all subagents."""
         return await self.subagents.run_all()
+
+    async def process_alert_webhook(self, payload: dict) -> dict:
+        """Process an Azure Monitor common alert schema webhook."""
+        essentials = payload.get("data", {}).get("essentials", {})
+        monitor_condition = essentials.get("monitorCondition", "")
+
+        # Only process fired alerts, not resolved
+        if monitor_condition == "Resolved":
+            logger.info("Alert resolved: %s", essentials.get("alertRule", ""))
+            return {"status": "ignored", "reason": "alert_resolved"}
+
+        # Resolve plan from alert rule name
+        alert_rule = essentials.get("alertRule", "")
+        plan_name = self._resolve_plan_from_alert_rule(alert_rule)
+
+        if plan_name and self.incident_mgr.get_plan(plan_name):
+            incident = self.incident_mgr.create_incident(
+                plan_name,
+                description=essentials.get("description", ""),
+                metadata={
+                    "alert_id": essentials.get("alertId", ""),
+                    "alert_rule": alert_rule,
+                    "severity": essentials.get("severity", ""),
+                    "source": "azure_monitor_webhook",
+                },
+            )
+            logger.info("Incident created from alert: %s -> %s", alert_rule, incident.id)
+            return {
+                "status": "incident_created",
+                "incident_id": incident.id,
+                "plan_name": plan_name,
+            }
+
+        logger.warning("No matching plan for alert: %s", alert_rule)
+        return {"status": "no_matching_plan", "alert_rule": alert_rule}
+
+    @staticmethod
+    def _resolve_plan_from_alert_rule(alert_rule_name: str) -> str | None:
+        """Map Azure Monitor alert rule name to incident plan name."""
+        mapping = {
+            "sre-sql-high-dtu": "sql_high_dtu",
+            "sre-sql-connection-failures": "sql_connection_failures",
+            "sre-sql-deadlocks": "sql_deadlocks",
+            "sre-sql-storage-critical": "sql_storage_critical",
+            "sre-cosmos-throttling": "cosmos_throttling",
+            "sre-cosmos-replication-lag": "cosmos_replication_lag",
+            "sre-storage-availability-drop": "storage_availability_drop",
+            "sre-storage-high-latency": "storage_high_latency",
+            "sre-api-5xx-spike": "api_5xx_spike",
+            "sre-api-high-response-time": "api_high_response_time",
+            "sre-api-cpu-exhaustion": "api_resource_exhaustion",
+            "sre-api-memory-exhaustion": "api_resource_exhaustion",
+            "sre-apim-capacity-high": "apim_capacity_high",
+            "sre-apim-backend-slow": "apim_backend_slow",
+            "sre-apim-auth-spike": "apim_auth_spike",
+            "sre-foundry-high-error-rate": "foundry_high_error_rate",
+            "sre-foundry-high-latency": "foundry_high_latency",
+            "sre-frontend-function-errors": "frontend_function_errors",
+        }
+        return mapping.get(alert_rule_name)
