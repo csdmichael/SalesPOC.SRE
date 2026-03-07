@@ -11,6 +11,10 @@ param containerImage string
 @secure()
 param appInsightsConnectionString string = ''
 
+@description('GitHub personal access token for repo connectors')
+@secure()
+param githubToken string = ''
+
 // --- Log Analytics Workspace ---
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: '${agentName}-logs'
@@ -62,6 +66,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8080
         transport: 'http'
       }
+      secrets: [
+        {
+          name: 'github-token'
+          value: githubToken
+        }
+      ]
     }
     template: {
       containers: [
@@ -88,6 +98,14 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
               value: appInsightsConnectionString
+            }
+            {
+              name: 'GITHUB_TOKEN'
+              secretRef: 'github-token'
+            }
+            {
+              name: 'GITHUB_ORG'
+              value: 'csdmichael'
             }
           ]
         }

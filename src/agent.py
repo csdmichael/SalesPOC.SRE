@@ -6,6 +6,7 @@ from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from azure.monitor.opentelemetry import configure_azure_monitor
 
 from src.config import settings
+from src.github_connector import GitHubConnector
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class SREAgent:
         self.credential = get_credential()
         self.agent_name = settings.agent_name
         self.endpoint = settings.agent_endpoint
+        self.github = GitHubConnector()
         logger.info("SRE Agent '%s' initialized.", self.agent_name)
 
     async def handle_incident(self, incident_data: dict) -> dict:
@@ -52,8 +54,10 @@ class SREAgent:
 
     async def health_check(self) -> dict:
         """Return agent health status."""
+        github_status = self.github.check_connectivity()
         return {
             "status": "healthy",
             "agent": self.agent_name,
             "endpoint": self.endpoint,
+            "github_repos": github_status,
         }

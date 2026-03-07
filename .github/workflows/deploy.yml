@@ -50,13 +50,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lowercase image name
+        id: lower
+        run: echo "image_name=${IMAGE_NAME,,}" >> "$GITHUB_OUTPUT"
+        env:
+          IMAGE_NAME: ${{ github.repository }}
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.lower.outputs.image_name }}
           tags: |
-            type=sha,prefix=
+            type=sha,format=long,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
@@ -83,6 +89,12 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Lowercase image name
+        id: lower
+        run: echo "image_name=${REPO,,}" >> "$GITHUB_OUTPUT"
+        env:
+          REPO: ${{ github.repository }}
+
       - name: Deploy Bicep template
         uses: azure/arm-deploy@v2
         with:
@@ -92,8 +104,9 @@ jobs:
           parameters: >
             agentName=${{ env.AGENT_NAME }}
             location=${{ env.AZURE_REGION }}
-            containerImage=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            containerImage=${{ env.REGISTRY }}/${{ steps.lower.outputs.image_name }}:latest
             appInsightsConnectionString=${{ secrets.APP_INSIGHTS_CONNECTION_STRING }}
+            githubToken=${{ secrets.GH_REPO_TOKEN }}
 
       - name: Verify deployment
         run: |
