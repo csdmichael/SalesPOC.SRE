@@ -112,18 +112,6 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-// ─── Monitoring Reader role for querying Azure Monitor metrics ───
-var monitoringReaderRoleId = '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
-
-resource monitoringReaderAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(managedIdentity.id, monitoringReaderRoleId, resourceGroup().id)
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', monitoringReaderRoleId)
-    principalId: managedIdentity.properties.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
 output containerAppFqdn string = containerApp.properties.configuration.ingress.fqdn
 output managedIdentityClientId string = managedIdentity.properties.clientId
 output managedIdentityPrincipalId string = managedIdentity.properties.principalId
