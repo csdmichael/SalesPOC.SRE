@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from enum import Enum
 
 from src.monitors import AzureResourceMonitor, HealthStatus, ResourceType
-from src.incidents import IncidentManager, IncidentPlan
+from src.incidents import IncidentManager
 from src.github_connector import GitHubConnector
 
 logger = logging.getLogger(__name__)

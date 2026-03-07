@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import signal
 
 from src.agent import SREAgent, configure_monitoring
 from src.config import settings
