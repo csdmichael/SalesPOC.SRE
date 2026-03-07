@@ -106,7 +106,6 @@ jobs:
             location=${{ env.AZURE_REGION }}
             containerImage=${{ env.REGISTRY }}/${{ steps.lower.outputs.image_name }}:latest
             appInsightsConnectionString=${{ secrets.APP_INSIGHTS_CONNECTION_STRING }}
-            githubToken=${{ secrets.GH_REPO_TOKEN }}
 
       - name: Verify deployment
         run: |
