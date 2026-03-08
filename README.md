@@ -2,6 +2,8 @@
 
 Azure SRE Agent deployed to East US 2 via GitHub Actions. Provides automated monitoring, incident response, and operational intelligence across the Sales POC Azure infrastructure.
 
+All Azure Monitor SDK calls run in a thread pool (`asyncio.to_thread`) to avoid blocking the async event loop, ensuring the HTTP server, scheduler, and webhook processing remain responsive at all times.
+
 ## Architecture Diagram
 
 ```mermaid
@@ -9,6 +11,7 @@ graph TB
     subgraph SRE["SRE Agent (sre-poc-ai-my)"]
         Agent[SRE Agent Core]
         WH[Webhook Server :8080]
+        LZ[/healthz liveness probe/]
         Sched[Task Scheduler]
         IM[Incident Manager]
 
@@ -316,9 +319,21 @@ All alert rules evaluate every 5 minutes with a 5-minute window.
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/api/alerts/webhook` | Azure Monitor common alert schema webhook receiver |
-| `GET` | `/api/health` | Agent health check (resources, repos, incidents, scheduler) |
+| `GET` | `/api/health` | Full agent health check (resources, repos, incidents, scheduler) |
+| `GET` | `/healthz` | Lightweight liveness probe (no Azure calls, instant response) |
 | `GET` | `/api/dashboard` | Azure Monitor metrics dashboard summary |
 | `GET` | `/api/incidents` | Active incidents list |
+
+### Container Health Probes
+
+The Container App is configured with HTTP health probes targeting `/healthz`:
+
+| Probe | Path | Period | Failure Threshold | Initial Delay |
+|---|---|---|---|---|
+| **Startup** | `/healthz` | 3s | 10 | 2s |
+| **Liveness** | `/healthz` | 30s | 3 | — |
+
+The `/healthz` endpoint returns immediately without making any Azure SDK calls, ensuring probes never time out even during heavy metric queries.
 
 ### IAM Roles
 
@@ -388,9 +403,9 @@ The managed identity (`sre-poc-ai-my-identity`) is assigned **Monitoring Reader*
 │   ├── knowledge_base.py          # Architecture, troubleshooting, procedures
 │   ├── main.py                    # Entry point + HTTP server startup
 │   ├── metrics.py                 # Metric definitions + SLA targets
-│   ├── monitors.py                # Azure Monitor resource queries
+│   ├── monitors.py                # Azure Monitor resource queries (async via thread pool)
 │   ├── scheduler.py               # Async scheduled task runner
-│   ├── server.py                  # aiohttp webhook + health endpoints
+│   ├── server.py                  # aiohttp webhook + health + liveness endpoints
 │   └── subagents.py               # Specialized analysis subagents
 ├── Dockerfile
 ├── requirements.txt
@@ -438,5 +453,7 @@ python -m src.main
 Pushing to `main` triggers the GitHub Actions workflow which:
 
 1. **Build** – Lints code, builds Docker image, pushes to GHCR.
-2. **Deploy App** – Logs into Azure via OIDC, deploys `main.bicep` (Container App + Monitoring Reader role).
+2. **Deploy App** – Logs into Azure via OIDC, deploys `main.bicep` (Container App + startup/liveness probes + Monitoring Reader role).
 3. **Deploy Alerts** – Deploys `alerts.bicep` (18 metric alert rules + action group webhook → Container App).
+
+Verbose Azure SDK HTTP logging is suppressed at startup to keep container logs clean and actionable.
