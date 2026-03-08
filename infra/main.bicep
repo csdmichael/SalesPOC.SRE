@@ -1,5 +1,5 @@
 @description('Name of the SRE agent')
-param agentName string = 'sre-poc-ai-my'
+param agentName string = 'sre-ai-my'
 
 @description('Azure region for deployment')
 param location string = 'eastus2'

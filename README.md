@@ -1,4 +1,4 @@
-# SRE Agent: sre-poc-ai-my
+# SRE Agent: sre-ai-my
 
 Azure SRE Agent deployed to East US 2 via GitHub Actions. Provides automated monitoring, incident response, and operational intelligence across the Sales POC Azure infrastructure.
 
@@ -8,7 +8,7 @@ All Azure Monitor SDK calls run in a thread pool (`asyncio.to_thread`) to avoid 
 
 ```mermaid
 graph TB
-    subgraph SRE["SRE Agent (sre-poc-ai-my)"]
+    subgraph SRE["SRE Agent (sre-ai-my)"]
         Agent[SRE Agent Core]
         WH[Webhook Server :8080]
         LZ[/healthz liveness probe/]
@@ -30,7 +30,7 @@ graph TB
     end
 
     subgraph AzMon["Azure Monitor"]
-        AG[Action Group<br/>sre-poc-ai-my-ag]
+        AG[Action Group<br/>sre-ai-my-ag]
         AR[18 Metric Alert Rules]
     end
 
@@ -124,13 +124,13 @@ graph LR
 
 | Property | Value |
 |---|---|
-| **Name** | `sre-poc-ai-my` |
+| **Name** | `sre-ai-my` |
 | **Subscription** | ME-MngEnvMCAP829495-myaacoub-1 (`86b37969-9445-49cf-b03f-d8866235171c`) |
 | **Resource Group** | `ai-myaacoub` |
 | **Region** | East US 2 |
-| **Agent Endpoint** | `https://sre-poc-ai-my--618da5b9.daa74423.eastus2.azuresre.ai` |
-| **Managed Identity** | `sre-poc-ai-my-bvrrtvop7umme` |
-| **App Insights** | `sre-poc-ai-my-b8bc7f81-ab86-app-insights` |
+| **Agent Endpoint** | `https://sre-ai-my--618da5b9.daa74423.eastus2.azuresre.ai` |
+| **Managed Identity** | `sre-ai-my-bvrrtvop7umme` |
+| **App Insights** | `sre-ai-my-b8bc7f81-ab86-app-insights` |
 
 ## Monitored Azure Resources
 
@@ -274,7 +274,7 @@ The incident platform is connected to Azure Monitor via metric alert rules and a
 ```mermaid
 flowchart LR
     R[Azure Resource] -->|metric crosses threshold| AR[Alert Rule]
-    AR -->|fires| AG[Action Group<br/>sre-poc-ai-my-ag]
+    AR -->|fires| AG[Action Group<br/>sre-ai-my-ag]
     AG -->|POST common alert schema| WH[/api/alerts/webhook/]
     WH -->|maps alert rule to plan| IM[Incident Manager]
     IM -->|creates| INC[Incident + Runbook]
@@ -284,7 +284,7 @@ flowchart LR
 
 | Property | Value |
 |---|---|
-| **Name** | `sre-poc-ai-my-ag` |
+| **Name** | `sre-ai-my-ag` |
 | **Type** | Webhook |
 | **Target** | `https://<container-app-fqdn>/api/alerts/webhook` |
 | **Schema** | Common Alert Schema |
@@ -337,7 +337,7 @@ The `/healthz` endpoint returns immediately without making any Azure SDK calls, 
 
 ### IAM Roles
 
-The managed identity (`sre-poc-ai-my-identity`) is assigned **Monitoring Reader** on the resource group, allowing it to query Azure Monitor metrics for all Sales POC resources.
+The managed identity (`sre-ai-my-identity`) is assigned **Monitoring Reader** on the resource group, allowing it to query Azure Monitor metrics for all Sales POC resources.
 
 ## Incident Response Plans
 

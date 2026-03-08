@@ -23,7 +23,7 @@ var appServicePlanId = '${rgId}/providers/Microsoft.Web/serverfarms/ASP-aimyaaco
 
 // ─── Action Group (routes alerts to SRE agent webhook) ──
 resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
-  name: 'sre-poc-ai-my-ag'
+  name: 'sre-ai-my-ag'
   location: 'Global'
   properties: {
     groupShortName: 'SREAgent'

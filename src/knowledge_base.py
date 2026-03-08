@@ -278,7 +278,7 @@ AZURE_RESOURCE_MAP = {
         "apim_service": "apim-poc-my",
         "ai_foundry": "001-ai-poc",
         "frontend_app_service": "SalesPOC",
-        "sre_agent": "sre-poc-ai-my",
-        "app_insights": "sre-poc-ai-my-b8bc7f81-ab86-app-insights",
+        "sre_agent": "sre-ai-my",
+        "app_insights": "sre-ai-my-b8bc7f81-ab86-app-insights",
     },
 }

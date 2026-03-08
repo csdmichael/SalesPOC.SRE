@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  AGENT_NAME: sre-poc-ai-my
+  AGENT_NAME: sre-ai-my
   AZURE_SUBSCRIPTION_ID: 86b37969-9445-49cf-b03f-d8866235171c
   AZURE_RESOURCE_GROUP: ai-myaacoub
   AZURE_REGION: eastus2
@@ -136,6 +136,6 @@ jobs:
           echo "Verifying action group..."
           az monitor action-group show \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --name sre-poc-ai-my-ag \
+            --name sre-ai-my-ag \
             --query "{name:name, enabled:enabled, webhooks:webhookReceivers[].serviceUri}" \
             --output json

@@ -1,1 +1,1 @@
-"""Azure SRE Agent - sre-poc-ai-my"""
+"""Azure SRE Agent - sre-ai-my"""
