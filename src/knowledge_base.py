@@ -1,5 +1,7 @@
 """Knowledge base for Sales POC SRE operations."""
 
+from src.config import settings
+
 
 # ──────────────────── Architecture ────────────────────
 ARCHITECTURE = {
@@ -123,7 +125,7 @@ TROUBLESHOOTING = {
             "resolution": [
                 "Check App Insights exceptions: az monitor app-insights query",
                 "Verify downstream service connectivity (SQL, Cosmos, Storage)",
-                "Restart: az webapp restart --name SalesPOC-API",
+                f"Restart: az webapp restart --name {settings.api_app_service_name}",
                 "Check for recent deployments that may have introduced bugs",
             ],
         },
@@ -266,19 +268,19 @@ OPERATIONAL_PROCEDURES = {
 
 # ──────────────────── Azure Resource Reference ────────────────────
 AZURE_RESOURCE_MAP = {
-    "subscription_id": "86b37969-9445-49cf-b03f-d8866235171c",
-    "resource_group": "ai-myaacoub",
-    "region": "eastus2",
+    "subscription_id": settings.azure_subscription_id,
+    "resource_group": settings.azure_resource_group,
+    "region": settings.azure_region,
     "resources": {
-        "sql_server": "ai-db-poc",
-        "sql_database": "ai-db-poc",
-        "cosmos_account": "cosmos-ai-poc",
-        "storage_account": "aistoragemyaacoub",
-        "api_app_service": "SalesPOC-API",
-        "apim_service": "apim-poc-my",
-        "ai_foundry": "001-ai-poc",
-        "frontend_app_service": "SalesPOC",
-        "sre_agent": "sre-ai-my",
-        "app_insights": "sre-ai-my-b8bc7f81-ab86-app-insights",
+        "sql_server": settings.sql_server_name,
+        "sql_database": settings.sql_database_name,
+        "cosmos_account": settings.cosmos_account_name,
+        "storage_account": settings.storage_account_name,
+        "api_app_service": settings.api_app_service_name,
+        "apim_service": settings.apim_service_name,
+        "ai_foundry": settings.ai_foundry_name,
+        "frontend_app_service": settings.frontend_app_service_name,
+        "sre_agent": settings.agent_name,
+        "app_insights": settings.app_insights_resource,
     },
 }

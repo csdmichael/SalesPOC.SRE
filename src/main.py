@@ -30,9 +30,9 @@ async def main() -> None:
     app = create_app(agent)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", 8080)
+    site = web.TCPSite(runner, "0.0.0.0", settings.server_port)
     await site.start()
-    logger.info("HTTP server started on port 8080")
+    logger.info("HTTP server started on port %d", settings.server_port)
     logger.info("Webhook endpoint: POST /api/alerts/webhook")
 
     # Now perform initialization (after server is listening)
