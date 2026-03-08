@@ -337,7 +337,12 @@ The `/healthz` endpoint returns immediately without making any Azure SDK calls, 
 
 ### IAM Roles
 
-The managed identity (`sre-ai-my-identity`) is assigned **Monitoring Reader** on the resource group, allowing it to query Azure Monitor metrics for all Sales POC resources.
+Access to use this agent requires an Azure RBAC **SRE Agent Reader** role or higher on the agent resource.
+
+| Role | Scope | Purpose |
+|---|---|---|
+| **SRE Agent Reader** (or higher) | `sre-ai-my` agent resource | Required for users to access and interact with the SRE agent |
+| **Monitoring Reader** | Resource group `ai-myaacoub` | Assigned to managed identity (`sre-ai-my-identity`) to query Azure Monitor metrics |
 
 ## Incident Response Plans
 
