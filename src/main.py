@@ -21,6 +21,17 @@ async def main() -> None:
     configure_monitoring()
 
     agent = SREAgent()
+
+    # Start HTTP server FIRST so health probes succeed immediately
+    app = create_app(agent)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8080)
+    await site.start()
+    logger.info("HTTP server started on port 8080")
+    logger.info("Webhook endpoint: POST /api/alerts/webhook")
+
+    # Now perform initialization (after server is listening)
     health = await agent.health_check()
     logger.info("Agent started: %s", health.get("status"))
     logger.info("Monitoring %d Azure resources", len(health.get("azure_resources", {}).get("resources", {})))
@@ -33,15 +44,6 @@ async def main() -> None:
     for name, result in analysis.items():
         status = "OK" if result.get("success") else "FAILED"
         logger.info("  [%s] %s: %s", status, name, result.get("findings", [result.get("error", "")]))
-
-    # Start HTTP server for Azure Monitor webhook alerts
-    app = create_app(agent)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", 8080)
-    await site.start()
-    logger.info("HTTP server started on port 8080")
-    logger.info("Webhook endpoint: POST /api/alerts/webhook")
 
     # Start the scheduler loop (runs indefinitely)
     logger.info("Starting scheduled task loop...")
