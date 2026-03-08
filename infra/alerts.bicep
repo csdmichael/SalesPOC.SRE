@@ -19,6 +19,7 @@ var apiId = '${rgId}/providers/Microsoft.Web/sites/SalesPOC-API'
 var apimId = '${rgId}/providers/Microsoft.ApiManagement/service/apim-poc-my'
 var foundryId = '${rgId}/providers/Microsoft.CognitiveServices/accounts/001-ai-poc'
 var frontendId = '${rgId}/providers/Microsoft.Web/sites/SalesPOC'
+var appServicePlanId = '${rgId}/providers/Microsoft.Web/serverfarms/ASP-aimyaacoub-87dc'
 
 // ─── Action Group (routes alerts to SRE agent webhook) ──
 resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
@@ -40,7 +41,7 @@ resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
 // ─── Alert Rule Configurations ──────────────────────────
 var alertConfigs = [
   // SQL Database
-  { name: 'sre-sql-high-dtu', desc: 'SQL Database DTU > 90%', sev: 2, target: sqlDbId, metric: 'dtu_consumption_percent', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'sql_high_dtu' }
+  { name: 'sre-sql-high-cpu', desc: 'SQL Database CPU > 90%', sev: 2, target: sqlDbId, metric: 'cpu_percent', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'sql_high_cpu' }
   { name: 'sre-sql-connection-failures', desc: 'SQL connection failures > 20 in 5min', sev: 1, target: sqlDbId, metric: 'connection_failed', op: 'GreaterThan', thresh: 20, agg: 'Total', plan: 'sql_connection_failures' }
   { name: 'sre-sql-deadlocks', desc: 'SQL deadlocks > 5 in 5min', sev: 2, target: sqlDbId, metric: 'deadlock', op: 'GreaterThan', thresh: 5, agg: 'Total', plan: 'sql_deadlocks' }
   { name: 'sre-sql-storage-critical', desc: 'SQL storage > 90%', sev: 2, target: sqlDbId, metric: 'storage_percent', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'sql_storage_critical' }
@@ -56,8 +57,8 @@ var alertConfigs = [
   // API (App Service)
   { name: 'sre-api-5xx-spike', desc: 'API 5xx errors > 20 in 5min', sev: 1, target: apiId, metric: 'Http5xx', op: 'GreaterThan', thresh: 20, agg: 'Total', plan: 'api_5xx_spike' }
   { name: 'sre-api-high-response-time', desc: 'API response time > 3s', sev: 2, target: apiId, metric: 'HttpResponseTime', op: 'GreaterThan', thresh: 3, agg: 'Average', plan: 'api_high_response_time' }
-  { name: 'sre-api-cpu-exhaustion', desc: 'API CPU > 90%', sev: 2, target: apiId, metric: 'CpuPercentage', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'api_resource_exhaustion' }
-  { name: 'sre-api-memory-exhaustion', desc: 'API memory > 90%', sev: 2, target: apiId, metric: 'MemoryPercentage', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'api_resource_exhaustion' }
+  { name: 'sre-api-cpu-exhaustion', desc: 'App Service Plan CPU > 90%', sev: 2, target: appServicePlanId, metric: 'CpuPercentage', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'api_resource_exhaustion' }
+  { name: 'sre-api-memory-exhaustion', desc: 'App Service Plan memory > 90%', sev: 2, target: appServicePlanId, metric: 'MemoryPercentage', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'api_resource_exhaustion' }
 
   // API Management
   { name: 'sre-apim-capacity-high', desc: 'APIM capacity > 90%', sev: 2, target: apimId, metric: 'Capacity', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'apim_capacity_high' }

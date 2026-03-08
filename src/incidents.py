@@ -65,16 +65,16 @@ class Incident:
 INCIDENT_PLANS: list[IncidentPlan] = [
     # ─── SQL Database ───
     IncidentPlan(
-        name="sql_high_dtu",
+        name="sql_high_cpu",
         resource_type="sql_db",
-        trigger_condition="dtu_consumption_percent > 90%",
+        trigger_condition="cpu_percent > 90%",
         severity=Severity.SEV2,
-        description="SQL Database DTU consumption critically high",
+        description="SQL Database CPU consumption critically high",
         runbook=[
             RunbookStep(1, "Identify queries", "Run sys.dm_exec_query_stats to find top CPU queries", automated=True,
-                        command="az sql db show --name ai-db-poc --server ai-db-poc --resource-group ai-myaacoub --query '{dtu:currentServiceObjectiveName,status:status}'"),
+                        command="az sql db show --name ai-db-poc --server ai-db-poc --resource-group ai-myaacoub --query '{sku:currentSku,status:status}'"),
             RunbookStep(2, "Check long-running queries", "Identify and optionally kill long-running transactions"),
-            RunbookStep(3, "Scale up DTU tier", "Temporarily scale to a higher tier if load is legitimate", automated=True,
+            RunbookStep(3, "Scale up compute", "Temporarily scale to a higher vCore tier if load is legitimate", automated=True,
                         command="az sql db update --name ai-db-poc --server ai-db-poc --resource-group ai-myaacoub --service-objective S3"),
             RunbookStep(4, "Notify team", "Alert backend team to investigate query patterns"),
         ],

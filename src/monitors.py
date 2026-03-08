@@ -54,11 +54,11 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
         "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.Sql/servers/ai-db-poc/databases/ai-db-poc",
         "display_name": "Sales POC SQL Database",
         "metrics": [
-            {"name": "dtu_consumption_percent", "aggregation": "Average", "threshold_warn": 70, "threshold_crit": 90},
+            {"name": "cpu_percent", "aggregation": "Average", "threshold_warn": 70, "threshold_crit": 90},
             {"name": "storage_percent", "aggregation": "Average", "threshold_warn": 75, "threshold_crit": 90},
             {"name": "connection_failed", "aggregation": "Total", "threshold_warn": 5, "threshold_crit": 20},
             {"name": "deadlock", "aggregation": "Total", "threshold_warn": 1, "threshold_crit": 5},
-            {"name": "cpu_percent", "aggregation": "Average", "threshold_warn": 70, "threshold_crit": 90},
+            {"name": "workers_percent", "aggregation": "Average", "threshold_warn": 70, "threshold_crit": 90},
         ],
     },
     ResourceType.COSMOS_DB: {
@@ -91,9 +91,8 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
             {"name": "Http5xx", "aggregation": "Total", "threshold_warn": 5, "threshold_crit": 20},
             {"name": "Http4xx", "aggregation": "Total", "threshold_warn": 50, "threshold_crit": 200},
             {"name": "Requests", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
-            {"name": "CpuPercentage", "aggregation": "Average", "threshold_warn": 70, "threshold_crit": 90},
-            {"name": "MemoryPercentage", "aggregation": "Average", "threshold_warn": 75, "threshold_crit": 90},
-            {"name": "HealthCheckStatus", "aggregation": "Average", "threshold_warn": 90, "threshold_crit": 50},
+            {"name": "AverageMemoryWorkingSet", "aggregation": "Average", "threshold_warn": None, "threshold_crit": None},
+            {"name": "AverageResponseTime", "aggregation": "Average", "threshold_warn": 1.0, "threshold_crit": 3.0},
         ],
     },
     ResourceType.APIM: {
@@ -125,8 +124,8 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
             {"name": "HttpResponseTime", "aggregation": "Average", "threshold_warn": 1.0, "threshold_crit": 3.0},
             {"name": "Http5xx", "aggregation": "Total", "threshold_warn": 5, "threshold_crit": 20},
             {"name": "Requests", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
-            {"name": "CpuPercentage", "aggregation": "Average", "threshold_warn": 70, "threshold_crit": 90},
-            {"name": "MemoryPercentage", "aggregation": "Average", "threshold_warn": 75, "threshold_crit": 90},
+            {"name": "AverageMemoryWorkingSet", "aggregation": "Average", "threshold_warn": None, "threshold_crit": None},
+            {"name": "AverageResponseTime", "aggregation": "Average", "threshold_warn": 1.0, "threshold_crit": 3.0},
         ],
     },
 }

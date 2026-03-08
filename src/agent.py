@@ -202,7 +202,7 @@ class SREAgent:
     def _resolve_plan_from_alert_rule(alert_rule_name: str) -> str | None:
         """Map Azure Monitor alert rule name to incident plan name."""
         mapping = {
-            "sre-sql-high-dtu": "sql_high_dtu",
+            "sre-sql-high-cpu": "sql_high_cpu",
             "sre-sql-connection-failures": "sql_connection_failures",
             "sre-sql-deadlocks": "sql_deadlocks",
             "sre-sql-storage-critical": "sql_storage_critical",

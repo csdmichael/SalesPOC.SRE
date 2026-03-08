@@ -38,7 +38,7 @@ graph TB
         API[App Service API]
         APIM[API Management]
         FOUNDRY[AI Foundry]
-        SWA[Static Web App]
+        FE[Frontend App Service]
     end
 
     subgraph GitHub["GitHub Repos"]
@@ -62,7 +62,7 @@ graph TB
     AR -.evaluates.-> API
     AR -.evaluates.-> APIM
     AR -.evaluates.-> FOUNDRY
-    AR -.evaluates.-> SWA
+    AR -.evaluates.-> FE
     AR --fires--> AG
     AG --webhook POST--> WH
     WH --> IM
@@ -72,7 +72,7 @@ graph TB
     API_SA --> API
     API_SA --> APIM
     AI_SA --> FOUNDRY
-    FE_SA --> SWA
+    FE_SA --> FE
     FE_SA --> STORAGE
 
     MON --> SQL
@@ -81,7 +81,7 @@ graph TB
     MON --> API
     MON --> APIM
     MON --> FOUNDRY
-    MON --> SWA
+    MON --> FE
 
     GH --> UI_R
     GH --> API_R
@@ -96,8 +96,8 @@ graph TB
 
 ```mermaid
 graph LR
-    User((User)) --> SWA[Frontend<br/>Static Web App]
-    SWA --> APIM[API Management]
+    User((User)) --> FE[Frontend<br/>App Service]
+    FE --> APIM[API Management]
     APIM --> API[App Service API]
     API --> SQL[(SQL Database)]
     API --> COSMOS[(Cosmos DB)]
@@ -106,7 +106,7 @@ graph LR
     MCP[MCP Server] --> API
     MCP --> FOUNDRY
 
-    SRE{SRE Agent} -.monitors.-> SWA
+    SRE{SRE Agent} -.monitors.-> FE
     SRE -.monitors.-> APIM
     SRE -.monitors.-> API
     SRE -.monitors.-> SQL
@@ -158,12 +158,10 @@ graph LR
 ### SQL Database
 | Metric | Unit | Warning | Critical |
 |---|---|---|---|
-| DTU Consumption | % | 70% | 90% |
 | CPU Usage | % | 70% | 90% |
 | Storage Usage | % | 75% | 90% |
 | Failed Connections | count | 5 | 20 |
 | Deadlocks | count | 1 | 5 |
-| Active Sessions | % | 70% | 90% |
 | Active Workers | % | 70% | 90% |
 
 ### Cosmos DB
@@ -187,9 +185,8 @@ graph LR
 | Response Time | seconds | 1.0 | 3.0 |
 | Server Errors (5xx) | count | 5 | 20 |
 | Client Errors (4xx) | count | 50 | 200 |
-| CPU % | % | 70% | 90% |
-| Memory % | % | 75% | 90% |
-| Health Check | % | < 90% | < 50% |
+| Avg Memory Working Set | bytes | — | — |
+| Avg Response Time | seconds | 1.0 | 3.0 |
 
 ### API Management
 | Metric | Unit | Warning | Critical |
@@ -206,10 +203,13 @@ graph LR
 | Latency | ms | 2000 | 5000 |
 | Success Rate | % | < 95% | < 90% |
 
-### Frontend (Static Web App)
+### Frontend (App Service)
 | Metric | Unit | Warning | Critical |
 |---|---|---|---|
-| Function Errors | count | 5 | 20 |
+| Response Time | seconds | 1.0 | 3.0 |
+| Server Errors (5xx) | count | 5 | 20 |
+| Avg Memory Working Set | bytes | — | — |
+| Avg Response Time | seconds | 1.0 | 3.0 |
 
 ## SLA Targets
 
@@ -244,10 +244,10 @@ graph LR
 
 | Subagent | Monitors | Responsibilities |
 |---|---|---|
-| **Database** | SQL DB, Cosmos DB | DTU/RU analysis, deadlock detection, throttling alerts, storage warnings |
+| **Database** | SQL DB, Cosmos DB | CPU/RU analysis, deadlock detection, throttling alerts, storage warnings |
 | **API Gateway** | API, APIM | Error rate tracking, response time analysis, capacity monitoring, auth anomalies |
 | **AI Services** | AI Foundry | Model error rates, latency tracking, token usage monitoring |
-| **Frontend** | Static Web App, Storage | Function errors, availability, latency analysis |
+| **Frontend** | App Service, Storage | HTTP errors, availability, latency analysis |
 | **Security** | All resources + GitHub | Unauthorized access spikes, connection abuse, scanning detection, repo access |
 | **Cost** | All resources | Under-utilization detection, right-sizing recommendations |
 
@@ -290,7 +290,7 @@ flowchart LR
 
 | Alert Rule | Resource | Metric | Condition | Severity | Incident Plan |
 |---|---|---|---|---|---|
-| `sre-sql-high-dtu` | SQL DB | DTU % | > 90% | SEV2 | `sql_high_dtu` |
+| `sre-sql-high-cpu` | SQL DB | CPU % | > 90% | SEV2 | `sql_high_cpu` |
 | `sre-sql-connection-failures` | SQL DB | Failed connections | > 20 | SEV1 | `sql_connection_failures` |
 | `sre-sql-deadlocks` | SQL DB | Deadlocks | > 5 | SEV2 | `sql_deadlocks` |
 | `sre-sql-storage-critical` | SQL DB | Storage % | > 90% | SEV2 | `sql_storage_critical` |
@@ -300,8 +300,8 @@ flowchart LR
 | `sre-storage-high-latency` | Storage | E2E Latency | > 500ms | SEV3 | `storage_high_latency` |
 | `sre-api-5xx-spike` | API | Http5xx | > 20 | SEV1 | `api_5xx_spike` |
 | `sre-api-high-response-time` | API | Response time | > 3s | SEV2 | `api_high_response_time` |
-| `sre-api-cpu-exhaustion` | API | CPU % | > 90% | SEV2 | `api_resource_exhaustion` |
-| `sre-api-memory-exhaustion` | API | Memory % | > 90% | SEV2 | `api_resource_exhaustion` |
+| `sre-api-cpu-exhaustion` | App Service Plan | CPU % | > 90% | SEV2 | `api_resource_exhaustion` |
+| `sre-api-memory-exhaustion` | App Service Plan | Memory % | > 90% | SEV2 | `api_resource_exhaustion` |
 | `sre-apim-capacity-high` | APIM | Capacity | > 90% | SEV2 | `apim_capacity_high` |
 | `sre-apim-backend-slow` | APIM | Backend duration | > 5000ms | SEV2 | `apim_backend_slow` |
 | `sre-apim-auth-spike` | APIM | Unauthorized | > 100 | SEV2 | `apim_auth_spike` |
@@ -329,7 +329,7 @@ The managed identity (`sre-poc-ai-my-identity`) is assigned **Monitoring Reader*
 ### SQL Database (4 plans)
 | Plan | Trigger | Severity | Auto-Remediate |
 |---|---|---|---|
-| `sql_high_dtu` | DTU > 90% | SEV2 | Yes (scale up) |
+| `sql_high_cpu` | CPU > 90% | SEV2 | Yes (scale up) |
 | `sql_connection_failures` | Failed connections > 20/5min | SEV1 | No |
 | `sql_deadlocks` | Deadlocks > 5/5min | SEV2 | No |
 | `sql_storage_critical` | Storage > 90% | SEV2 | No |
