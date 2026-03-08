@@ -7,23 +7,51 @@
 @description('Webhook URL for the SRE agent (https://<fqdn>/api/alerts/webhook)')
 param webhookUrl string
 
-var subscriptionId = '86b37969-9445-49cf-b03f-d8866235171c'
-var rg = 'ai-myaacoub'
-var rgId = '/subscriptions/${subscriptionId}/resourceGroups/${rg}'
+@description('Name of the action group')
+param actionGroupName string = 'sre-ai-my-ag'
+
+@description('SQL Server name')
+param sqlServerName string = 'ai-db-poc'
+
+@description('SQL Database name')
+param sqlDatabaseName string = 'ai-db-poc'
+
+@description('Cosmos DB account name')
+param cosmosAccountName string = 'cosmos-ai-poc'
+
+@description('Storage account name')
+param storageAccountName string = 'aistoragemyaacoub'
+
+@description('API App Service name')
+param apiAppServiceName string = 'SalesPOC-API'
+
+@description('APIM service name')
+param apimServiceName string = 'apim-poc-my'
+
+@description('AI Foundry (Cognitive Services) account name')
+param aiFoundryName string = '001-ai-poc'
+
+@description('Frontend App Service name')
+param frontendAppServiceName string = 'SalesPOC'
+
+@description('App Service Plan name')
+param appServicePlanName string = 'ASP-aimyaacoub-87dc'
+
+var rgId = resourceGroup().id
 
 // ─── Monitored Resource IDs ─────────────────────────────
-var sqlDbId = '${rgId}/providers/Microsoft.Sql/servers/ai-db-poc/databases/ai-db-poc'
-var cosmosId = '${rgId}/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-ai-poc'
-var storageId = '${rgId}/providers/Microsoft.Storage/storageAccounts/aistoragemyaacoub'
-var apiId = '${rgId}/providers/Microsoft.Web/sites/SalesPOC-API'
-var apimId = '${rgId}/providers/Microsoft.ApiManagement/service/apim-poc-my'
-var foundryId = '${rgId}/providers/Microsoft.CognitiveServices/accounts/001-ai-poc'
-var frontendId = '${rgId}/providers/Microsoft.Web/sites/SalesPOC'
-var appServicePlanId = '${rgId}/providers/Microsoft.Web/serverfarms/ASP-aimyaacoub-87dc'
+var sqlDbId = '${rgId}/providers/Microsoft.Sql/servers/${sqlServerName}/databases/${sqlDatabaseName}'
+var cosmosId = '${rgId}/providers/Microsoft.DocumentDB/databaseAccounts/${cosmosAccountName}'
+var storageId = '${rgId}/providers/Microsoft.Storage/storageAccounts/${storageAccountName}'
+var apiId = '${rgId}/providers/Microsoft.Web/sites/${apiAppServiceName}'
+var apimId = '${rgId}/providers/Microsoft.ApiManagement/service/${apimServiceName}'
+var foundryId = '${rgId}/providers/Microsoft.CognitiveServices/accounts/${aiFoundryName}'
+var frontendId = '${rgId}/providers/Microsoft.Web/sites/${frontendAppServiceName}'
+var appServicePlanId = '${rgId}/providers/Microsoft.Web/serverfarms/${appServicePlanName}'
 
 // ─── Action Group (routes alerts to SRE agent webhook) ──
 resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
-  name: 'sre-ai-my-ag'
+  name: actionGroupName
   location: 'Global'
   properties: {
     groupShortName: 'SREAgent'

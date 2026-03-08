@@ -128,7 +128,7 @@ graph LR
 | **Subscription** | ME-MngEnvMCAP829495-myaacoub-1 (`86b37969-9445-49cf-b03f-d8866235171c`) |
 | **Resource Group** | `ai-myaacoub` |
 | **Region** | East US 2 |
-| **Agent Endpoint** | `https://sre-ai-my--618da5b9.daa74423.eastus2.azuresre.ai` |
+| **Agent Endpoint** | `https://sre-ai-my--0cad75dc.4650bed8.eastus2.azuresre.ai` |
 | **Managed Identity** | `sre-ai-my-bvrrtvop7umme` |
 | **App Insights** | `sre-ai-my-b8bc7f81-ab86-app-insights` |
 
@@ -389,15 +389,15 @@ The managed identity (`sre-ai-my-identity`) is assigned **Monitoring Reader** on
 ## Project Structure
 
 ```
-├── .github/workflows/deploy.yml   # CI/CD pipeline (build + deploy + alerts)
+├── .github/workflows/deploy.yml   # CI/CD pipeline (build → deploy-agent → deploy-monitoring)
 ├── infra/
 │   ├── main.bicep                 # Container App, Log Analytics, Identity, RBAC
 │   ├── main.bicepparam            # Bicep parameters
-│   └── alerts.bicep               # Azure Monitor alert rules + action group
+│   └── alerts.bicep               # Azure Monitor alert rules + action group (parameterized)
 ├── src/
 │   ├── __init__.py
 │   ├── agent.py                   # SRE agent core + webhook processing
-│   ├── config.py                  # Configuration / settings
+│   ├── config.py                  # Centralized configuration (all resource names & settings)
 │   ├── github_connector.py        # GitHub repo monitoring
 │   ├── incidents.py               # Incident plans + manager
 │   ├── knowledge_base.py          # Architecture, troubleshooting, procedures
@@ -450,10 +450,10 @@ python -m src.main
 
 ## Deployment
 
-Pushing to `main` triggers the GitHub Actions workflow which:
+Pushing to `main` triggers the GitHub Actions workflow which runs three separate jobs:
 
-1. **Build** – Lints code, builds Docker image, pushes to GHCR.
-2. **Deploy App** – Logs into Azure via OIDC, deploys `main.bicep` (Container App + startup/liveness probes + Monitoring Reader role).
-3. **Deploy Alerts** – Deploys `alerts.bicep` (18 metric alert rules + action group webhook → Container App).
+1. **Build** (`build`) – Lints code, builds Docker image, pushes to GHCR.
+2. **Deploy SRE Agent** (`deploy-agent`) – Logs into Azure via OIDC, deploys `main.bicep` (Container App + startup/liveness probes + Monitoring Reader role). Outputs the Container App FQDN.
+3. **Deploy Monitoring** (`deploy-monitoring`) – Deploys `alerts.bicep` (18 parameterized metric alert rules + action group webhook → Container App FQDN from step 2).
 
 Verbose Azure SDK HTTP logging is suppressed at startup to keep container logs clean and actionable.

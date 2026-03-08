@@ -19,7 +19,7 @@ class AgentSettings(BaseSettings):
 
     # Agent identity
     agent_name: str = "sre-ai-my"
-    agent_endpoint: str = "https://sre-ai-my--618da5b9.daa74423.eastus2.azuresre.ai"
+    agent_endpoint: str = "https://sre-ai-my--0cad75dc.4650bed8.eastus2.azuresre.ai"
     server_port: int = 8080
 
     # Azure environment
