@@ -12,13 +12,13 @@ var rg = 'ai-myaacoub'
 var rgId = '/subscriptions/${subscriptionId}/resourceGroups/${rg}'
 
 // ─── Monitored Resource IDs ─────────────────────────────
-var sqlDbId = '${rgId}/providers/Microsoft.Sql/servers/salespoc-sql/databases/salespoc-db'
-var cosmosId = '${rgId}/providers/Microsoft.DocumentDB/databaseAccounts/salespoc-cosmos'
-var storageId = '${rgId}/providers/Microsoft.Storage/storageAccounts/salespocstore'
-var apiId = '${rgId}/providers/Microsoft.Web/sites/salespoc-api'
-var apimId = '${rgId}/providers/Microsoft.ApiManagement/service/salespoc-apim'
-var foundryId = '${rgId}/providers/Microsoft.CognitiveServices/accounts/salespoc-ai-foundry'
-var frontendId = '${rgId}/providers/Microsoft.Web/staticSites/salespoc-ui'
+var sqlDbId = '${rgId}/providers/Microsoft.Sql/servers/ai-db-poc/databases/ai-db-poc'
+var cosmosId = '${rgId}/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-ai-poc'
+var storageId = '${rgId}/providers/Microsoft.Storage/storageAccounts/aistoragemyaacoub'
+var apiId = '${rgId}/providers/Microsoft.Web/sites/SalesPOC-API'
+var apimId = '${rgId}/providers/Microsoft.ApiManagement/service/apim-poc-my'
+var foundryId = '${rgId}/providers/Microsoft.CognitiveServices/accounts/001-ai-poc'
+var frontendId = '${rgId}/providers/Microsoft.Web/sites/SalesPOC'
 
 // ─── Action Group (routes alerts to SRE agent webhook) ──
 resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
@@ -68,8 +68,8 @@ var alertConfigs = [
   { name: 'sre-foundry-high-error-rate', desc: 'AI Foundry errors > 20 in 5min', sev: 2, target: foundryId, metric: 'TotalErrors', op: 'GreaterThan', thresh: 20, agg: 'Total', plan: 'foundry_high_error_rate' }
   { name: 'sre-foundry-high-latency', desc: 'AI Foundry latency > 5000ms', sev: 3, target: foundryId, metric: 'Latency', op: 'GreaterThan', thresh: 5000, agg: 'Average', plan: 'foundry_high_latency' }
 
-  // Frontend (Static Web App)
-  { name: 'sre-frontend-function-errors', desc: 'Frontend function errors > 20 in 5min', sev: 2, target: frontendId, metric: 'FunctionErrors', op: 'GreaterThan', thresh: 20, agg: 'Total', plan: 'frontend_function_errors' }
+  // Frontend (App Service)
+  { name: 'sre-frontend-http-errors', desc: 'Frontend HTTP 5xx errors > 20 in 5min', sev: 2, target: frontendId, metric: 'Http5xx', op: 'GreaterThan', thresh: 20, agg: 'Total', plan: 'frontend_http_errors' }
 ]
 
 // ─── Metric Alert Rules ─────────────────────────────────

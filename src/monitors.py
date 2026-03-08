@@ -51,7 +51,7 @@ class ResourceHealth:
 # --- Azure resource IDs for the Sales POC ---
 MONITORED_RESOURCES: dict[ResourceType, dict] = {
     ResourceType.SQL_DB: {
-        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.Sql/servers/salespoc-sql/databases/salespoc-db",
+        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.Sql/servers/ai-db-poc/databases/ai-db-poc",
         "display_name": "Sales POC SQL Database",
         "metrics": [
             {"name": "dtu_consumption_percent", "aggregation": "Average", "threshold_warn": 70, "threshold_crit": 90},
@@ -62,7 +62,7 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
         ],
     },
     ResourceType.COSMOS_DB: {
-        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.DocumentDB/databaseAccounts/salespoc-cosmos",
+        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-ai-poc",
         "display_name": "Sales POC Cosmos DB",
         "metrics": [
             {"name": "TotalRequestUnits", "aggregation": "Total", "threshold_warn": 800, "threshold_crit": 950},
@@ -74,7 +74,7 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
         ],
     },
     ResourceType.STORAGE: {
-        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.Storage/storageAccounts/salespocstore",
+        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.Storage/storageAccounts/aistoragemyaacoub",
         "display_name": "Sales POC Storage Account",
         "metrics": [
             {"name": "Availability", "aggregation": "Average", "threshold_warn": 99.5, "threshold_crit": 99.0},
@@ -84,7 +84,7 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
         ],
     },
     ResourceType.API: {
-        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.Web/sites/salespoc-api",
+        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.Web/sites/SalesPOC-API",
         "display_name": "Sales POC API (App Service)",
         "metrics": [
             {"name": "HttpResponseTime", "aggregation": "Average", "threshold_warn": 1.0, "threshold_crit": 3.0},
@@ -97,7 +97,7 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
         ],
     },
     ResourceType.APIM: {
-        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.ApiManagement/service/salespoc-apim",
+        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.ApiManagement/service/apim-poc-my",
         "display_name": "Sales POC API Management",
         "metrics": [
             {"name": "TotalRequests", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
@@ -108,7 +108,7 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
         ],
     },
     ResourceType.FOUNDRY: {
-        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.CognitiveServices/accounts/salespoc-ai-foundry",
+        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.CognitiveServices/accounts/001-ai-poc",
         "display_name": "Sales POC AI Foundry",
         "metrics": [
             {"name": "TotalCalls", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
@@ -119,12 +119,14 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
         ],
     },
     ResourceType.FRONTEND: {
-        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.Web/staticSites/salespoc-ui",
-        "display_name": "Sales POC Frontend (Static Web App)",
+        "resource_id": f"/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}/providers/Microsoft.Web/sites/SalesPOC",
+        "display_name": "Sales POC Frontend (App Service)",
         "metrics": [
-            {"name": "BytesSent", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
-            {"name": "FunctionErrors", "aggregation": "Total", "threshold_warn": 5, "threshold_crit": 20},
-            {"name": "RequestCount", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
+            {"name": "HttpResponseTime", "aggregation": "Average", "threshold_warn": 1.0, "threshold_crit": 3.0},
+            {"name": "Http5xx", "aggregation": "Total", "threshold_warn": 5, "threshold_crit": 20},
+            {"name": "Requests", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
+            {"name": "CpuPercentage", "aggregation": "Average", "threshold_warn": 70, "threshold_crit": 90},
+            {"name": "MemoryPercentage", "aggregation": "Average", "threshold_warn": 75, "threshold_crit": 90},
         ],
     },
 }

@@ -219,6 +219,6 @@ class SREAgent:
             "sre-apim-auth-spike": "apim_auth_spike",
             "sre-foundry-high-error-rate": "foundry_high_error_rate",
             "sre-foundry-high-latency": "foundry_high_latency",
-            "sre-frontend-function-errors": "frontend_function_errors",
+            "sre-frontend-http-errors": "frontend_http_errors",
         }
         return mapping.get(alert_rule_name)

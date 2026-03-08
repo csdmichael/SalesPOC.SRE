@@ -72,10 +72,10 @@ INCIDENT_PLANS: list[IncidentPlan] = [
         description="SQL Database DTU consumption critically high",
         runbook=[
             RunbookStep(1, "Identify queries", "Run sys.dm_exec_query_stats to find top CPU queries", automated=True,
-                        command="az sql db show --name salespoc-db --server salespoc-sql --resource-group ai-myaacoub --query '{dtu:currentServiceObjectiveName,status:status}'"),
+                        command="az sql db show --name ai-db-poc --server ai-db-poc --resource-group ai-myaacoub --query '{dtu:currentServiceObjectiveName,status:status}'"),
             RunbookStep(2, "Check long-running queries", "Identify and optionally kill long-running transactions"),
             RunbookStep(3, "Scale up DTU tier", "Temporarily scale to a higher tier if load is legitimate", automated=True,
-                        command="az sql db update --name salespoc-db --server salespoc-sql --resource-group ai-myaacoub --service-objective S3"),
+                        command="az sql db update --name ai-db-poc --server ai-db-poc --resource-group ai-myaacoub --service-objective S3"),
             RunbookStep(4, "Notify team", "Alert backend team to investigate query patterns"),
         ],
         auto_remediate=True,
@@ -89,7 +89,7 @@ INCIDENT_PLANS: list[IncidentPlan] = [
         runbook=[
             RunbookStep(1, "Check firewall rules", "Verify IP allowlists and VNet rules"),
             RunbookStep(2, "Check server status", "Verify SQL server is responding", automated=True,
-                        command="az sql server show --name salespoc-sql --resource-group ai-myaacoub --query '{state:state,fullyQualifiedDomainName:fullyQualifiedDomainName}'"),
+                        command="az sql server show --name ai-db-poc --resource-group ai-myaacoub --query '{state:state,fullyQualifiedDomainName:fullyQualifiedDomainName}'"),
             RunbookStep(3, "Check connection pool", "Review API connection pool settings and active connections"),
             RunbookStep(4, "Restart API service", "Restart the API App Service to reset connection pools"),
         ],
@@ -116,7 +116,7 @@ INCIDENT_PLANS: list[IncidentPlan] = [
             RunbookStep(1, "Identify large tables", "Query sys.dm_db_partition_stats for table sizes"),
             RunbookStep(2, "Archive old data", "Move historical records to cold storage"),
             RunbookStep(3, "Scale storage", "Increase max database size", automated=True,
-                        command="az sql db update --name salespoc-db --server salespoc-sql --resource-group ai-myaacoub --max-size 250GB"),
+                        command="az sql db update --name ai-db-poc --server ai-db-poc --resource-group ai-myaacoub --max-size 250GB"),
         ],
     ),
 
@@ -129,10 +129,10 @@ INCIDENT_PLANS: list[IncidentPlan] = [
         description="Cosmos DB request throttling (429s)",
         runbook=[
             RunbookStep(1, "Check RU consumption", "Review partition-level RU usage", automated=True,
-                        command="az cosmosdb show --name salespoc-cosmos --resource-group ai-myaacoub --query '{enableAutomaticFailover:enableAutomaticFailover,provisioningState:provisioningState}'"),
+                        command="az cosmosdb show --name cosmos-ai-poc --resource-group ai-myaacoub --query '{enableAutomaticFailover:enableAutomaticFailover,provisioningState:provisioningState}'"),
             RunbookStep(2, "Identify hot partitions", "Analyze partition key distribution"),
             RunbookStep(3, "Scale RU throughput", "Increase provisioned or autoscale max RUs", automated=True,
-                        command="az cosmosdb sql container throughput update --account-name salespoc-cosmos --database-name salespoc --name orders --resource-group ai-myaacoub --throughput 1000"),
+                        command="az cosmosdb sql container throughput update --account-name cosmos-ai-poc --database-name salespoc --name orders --resource-group ai-myaacoub --throughput 1000"),
             RunbookStep(4, "Review query patterns", "Optimize cross-partition queries"),
         ],
         auto_remediate=True,
@@ -160,7 +160,7 @@ INCIDENT_PLANS: list[IncidentPlan] = [
         runbook=[
             RunbookStep(1, "Check Azure status", "Verify if there is a regional Azure outage"),
             RunbookStep(2, "Check storage account health", "Review storage account diagnostics", automated=True,
-                        command="az storage account show --name salespocstore --resource-group ai-myaacoub --query '{provisioningState:provisioningState,statusOfPrimary:statusOfPrimary}'"),
+                        command="az storage account show --name aistoragemyaacoub --resource-group ai-myaacoub --query '{provisioningState:provisioningState,statusOfPrimary:statusOfPrimary}'"),
             RunbookStep(3, "Initiate failover", "Trigger account failover to secondary if GRS configured"),
             RunbookStep(4, "Verify blob containers", "Check container-level access and lease status"),
         ],
@@ -187,12 +187,12 @@ INCIDENT_PLANS: list[IncidentPlan] = [
         description="API returning high rate of server errors",
         runbook=[
             RunbookStep(1, "Check App Insights", "Review exception telemetry for root cause", automated=True,
-                        command="az webapp log tail --name salespoc-api --resource-group ai-myaacoub"),
+                        command="az webapp log tail --name SalesPOC-API --resource-group ai-myaacoub"),
             RunbookStep(2, "Check dependencies", "Verify SQL DB, Cosmos DB, and Storage connectivity"),
             RunbookStep(3, "Restart API", "Restart the App Service", automated=True,
-                        command="az webapp restart --name salespoc-api --resource-group ai-myaacoub"),
+                        command="az webapp restart --name SalesPOC-API --resource-group ai-myaacoub"),
             RunbookStep(4, "Scale out", "Add instances if load is too high", automated=True,
-                        command="az appservice plan update --name salespoc-api-plan --resource-group ai-myaacoub --number-of-workers 3"),
+                        command="az appservice plan update --name ASP-aimyaacoub-87dc --resource-group ai-myaacoub --number-of-workers 3"),
         ],
         auto_remediate=True,
     ),
@@ -218,7 +218,7 @@ INCIDENT_PLANS: list[IncidentPlan] = [
         runbook=[
             RunbookStep(1, "Identify resource hog", "Check per-instance CPU/memory profiles"),
             RunbookStep(2, "Scale out", "Add more instances", automated=True,
-                        command="az appservice plan update --name salespoc-api-plan --resource-group ai-myaacoub --number-of-workers 4"),
+                        command="az appservice plan update --name ASP-aimyaacoub-87dc --resource-group ai-myaacoub --number-of-workers 4"),
             RunbookStep(3, "Scale up", "Move to higher App Service plan tier"),
             RunbookStep(4, "Check for memory leaks", "Review App Insights memory trends over 24h"),
         ],
@@ -235,7 +235,7 @@ INCIDENT_PLANS: list[IncidentPlan] = [
         runbook=[
             RunbookStep(1, "Check request volume", "Review traffic patterns for unexpected spikes"),
             RunbookStep(2, "Scale APIM units", "Add capacity units to APIM instance", automated=True,
-                        command="az apim update --name salespoc-apim --resource-group ai-myaacoub --sku-capacity 2"),
+                        command="az apim update --name apim-poc-my --resource-group ai-myaacoub --sku-capacity 2"),
             RunbookStep(3, "Enable rate limiting", "Apply or tighten rate-limit policies"),
             RunbookStep(4, "Review caching", "Ensure response caching is configured for eligible APIs"),
         ],
@@ -276,7 +276,7 @@ INCIDENT_PLANS: list[IncidentPlan] = [
         description="AI Foundry model error rate elevated",
         runbook=[
             RunbookStep(1, "Check model deployment", "Verify model endpoint is healthy", automated=True,
-                        command="az cognitiveservices account show --name salespoc-ai-foundry --resource-group ai-myaacoub --query '{provisioningState:properties.provisioningState}'"),
+                        command="az cognitiveservices account show --name 001-ai-poc --resource-group ai-myaacoub --query '{provisioningState:properties.provisioningState}'"),
             RunbookStep(2, "Review error types", "Categorize errors (rate limit, model errors, input validation)"),
             RunbookStep(3, "Check quota", "Verify TPM/RPM limits haven't been exceeded"),
             RunbookStep(4, "Fallback model", "Switch to fallback model deployment if primary fails"),
@@ -298,16 +298,17 @@ INCIDENT_PLANS: list[IncidentPlan] = [
 
     # ─── Frontend ───
     IncidentPlan(
-        name="frontend_function_errors",
+        name="frontend_http_errors",
         resource_type="frontend",
-        trigger_condition="FunctionErrors > 20 in 5min",
+        trigger_condition="Http5xx > 20 in 5min",
         severity=Severity.SEV2,
-        description="Static Web App API function errors elevated",
+        description="Frontend App Service HTTP 5xx errors elevated",
         runbook=[
-            RunbookStep(1, "Check function logs", "Review SWA function execution logs"),
+            RunbookStep(1, "Check application logs", "Review App Service application logs"),
             RunbookStep(2, "Check linked API", "Verify APIM and backend API connectivity"),
-            RunbookStep(3, "Redeploy", "Trigger redeployment from latest commit"),
-            RunbookStep(4, "Verify routes", "Check staticwebapp.config.json route rules"),
+            RunbookStep(3, "Restart frontend", "Restart the App Service", automated=True,
+                        command="az webapp restart --name SalesPOC --resource-group ai-myaacoub"),
+            RunbookStep(4, "Check deployments", "Review recent deployments for regressions"),
         ],
     ),
 ]

@@ -133,13 +133,13 @@ graph LR
 
 | Resource | Type | Azure Name | Key Purpose |
 |---|---|---|---|
-| **SQL Database** | Azure SQL | `salespoc-sql / salespoc-db` | Transactional sales data |
-| **Cosmos DB** | Azure Cosmos DB | `salespoc-cosmos` | Product catalog, sessions, events |
-| **Storage Account** | Azure Storage | `salespocstore` | Documents, exports, media |
-| **API** | App Service | `salespoc-api` | Backend REST API |
-| **APIM** | API Management | `salespoc-apim` | Gateway, rate limiting, auth |
-| **AI Foundry** | Cognitive Services | `salespoc-ai-foundry` | GPT models, embeddings |
-| **Frontend** | Static Web App | `salespoc-ui` | React/Next.js UI |
+| **SQL Database** | Azure SQL | `ai-db-poc / ai-db-poc` | Transactional sales data |
+| **Cosmos DB** | Azure Cosmos DB | `cosmos-ai-poc` | Product catalog, sessions, events |
+| **Storage Account** | Azure Storage | `aistoragemyaacoub` | Documents, exports, media |
+| **API** | App Service | `SalesPOC-API` | Backend REST API |
+| **APIM** | API Management | `apim-poc-my` | Gateway, rate limiting, auth |
+| **AI Foundry** | Cognitive Services | `001-ai-poc` | GPT models, embeddings |
+| **Frontend** | App Service | `SalesPOC` | React/Next.js UI |
 
 ## Connected GitHub Repositories
 
@@ -307,7 +307,7 @@ flowchart LR
 | `sre-apim-auth-spike` | APIM | Unauthorized | > 100 | SEV2 | `apim_auth_spike` |
 | `sre-foundry-high-error-rate` | AI Foundry | Total errors | > 20 | SEV2 | `foundry_high_error_rate` |
 | `sre-foundry-high-latency` | AI Foundry | Latency | > 5000ms | SEV3 | `foundry_high_latency` |
-| `sre-frontend-function-errors` | Frontend | Function errors | > 20 | SEV2 | `frontend_function_errors` |
+| `sre-frontend-http-errors` | Frontend | Http5xx | > 20 | SEV2 | `frontend_http_errors` |
 
 All alert rules evaluate every 5 minutes with a 5-minute window.
 
@@ -369,7 +369,7 @@ The managed identity (`sre-poc-ai-my-identity`) is assigned **Monitoring Reader*
 ### Frontend (1 plan)
 | Plan | Trigger | Severity | Auto-Remediate |
 |---|---|---|---|
-| `frontend_function_errors` | Function errors > 20/5min | SEV2 | No |
+| `frontend_http_errors` | Http5xx > 20/5min | SEV2 | No |
 
 ## Project Structure
 
