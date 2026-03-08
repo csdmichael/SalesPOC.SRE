@@ -1,5 +1,6 @@
 """Azure resource monitors for Sales POC infrastructure."""
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -266,3 +267,17 @@ class AzureResourceMonitor:
                 for r in results
             },
         }
+
+    # ── Async wrappers (run sync Azure SDK calls in thread pool) ──
+
+    async def async_query_resource(self, resource_type: ResourceType, timespan_minutes: int = 5) -> ResourceHealth:
+        """Non-blocking wrapper around query_resource."""
+        return await asyncio.to_thread(self.query_resource, resource_type, timespan_minutes)
+
+    async def async_query_all(self, timespan_minutes: int = 5) -> list[ResourceHealth]:
+        """Non-blocking wrapper around query_all."""
+        return await asyncio.to_thread(self.query_all, timespan_minutes)
+
+    async def async_get_dashboard_summary(self, timespan_minutes: int = 5) -> dict:
+        """Non-blocking wrapper around get_dashboard_summary."""
+        return await asyncio.to_thread(self.get_dashboard_summary, timespan_minutes)

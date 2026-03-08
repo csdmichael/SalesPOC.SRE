@@ -102,6 +102,27 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: resourceGroup().name
             }
           ]
+          probes: [
+            {
+              type: 'Startup'
+              httpGet: {
+                path: '/healthz'
+                port: 8080
+              }
+              initialDelaySeconds: 2
+              periodSeconds: 3
+              failureThreshold: 10
+            }
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/healthz'
+                port: 8080
+              }
+              periodSeconds: 30
+              failureThreshold: 3
+            }
+          ]
         }
       ]
       scale: {

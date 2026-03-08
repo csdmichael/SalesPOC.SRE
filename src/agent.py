@@ -1,5 +1,6 @@
 """SRE Agent implementation for Azure SRE service."""
 
+import asyncio
 import logging
 
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
@@ -99,13 +100,13 @@ class SREAgent:
     # ── Scheduled task handlers ──
 
     async def _task_health_check(self) -> dict:
-        return self.monitor.get_dashboard_summary()
+        return await self.monitor.async_get_dashboard_summary()
 
     async def _task_subagent_analysis(self) -> dict:
         return await self.subagents.run_all()
 
     async def _task_github_check(self) -> dict:
-        return self.github.check_connectivity()
+        return await asyncio.to_thread(self.github.check_connectivity)
 
     async def _task_security_scan(self) -> dict:
         result = await self.subagents.security.analyze()
@@ -116,9 +117,9 @@ class SREAgent:
         return {"findings": result.findings, "recommendations": result.recommendations}
 
     async def _task_daily_report(self) -> dict:
-        dashboard = self.monitor.get_dashboard_summary()
+        dashboard = await self.monitor.async_get_dashboard_summary()
         incidents = self.incident_mgr.get_summary()
-        github = self.github.check_connectivity()
+        github = await asyncio.to_thread(self.github.check_connectivity)
         return {"dashboard": dashboard, "incidents": incidents, "github": github}
 
     # ── Public API ──
@@ -145,8 +146,8 @@ class SREAgent:
 
     async def health_check(self) -> dict:
         """Return agent health status."""
-        github_status = self.github.check_connectivity()
-        dashboard = self.monitor.get_dashboard_summary()
+        github_status = await asyncio.to_thread(self.github.check_connectivity)
+        dashboard = await self.monitor.async_get_dashboard_summary()
         incidents = self.incident_mgr.get_summary()
         scheduler = self.scheduler.get_status()
         return {

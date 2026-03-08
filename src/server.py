@@ -29,6 +29,11 @@ async def handle_health(request: web.Request) -> web.Response:
     return web.json_response({"status": "healthy"})
 
 
+async def handle_healthz(request: web.Request) -> web.Response:
+    """Lightweight liveness probe - no Azure calls."""
+    return web.json_response({"status": "alive"})
+
+
 async def handle_dashboard(request: web.Request) -> web.Response:
     """Dashboard summary endpoint."""
     agent = request.app.get("agent")
@@ -53,6 +58,7 @@ def create_app(agent=None) -> web.Application:
     app["agent"] = agent
     app.router.add_post("/api/alerts/webhook", handle_webhook)
     app.router.add_get("/api/health", handle_health)
+    app.router.add_get("/healthz", handle_healthz)
     app.router.add_get("/api/dashboard", handle_dashboard)
     app.router.add_get("/api/incidents", handle_incidents)
     return app

@@ -56,8 +56,8 @@ class DatabaseSubagent(BaseSubagent):
         recommendations = []
         incidents = []
 
-        sql_health = self._monitor.query_resource(ResourceType.SQL_DB)
-        cosmos_health = self._monitor.query_resource(ResourceType.COSMOS_DB)
+        sql_health = await self._monitor.async_query_resource(ResourceType.SQL_DB)
+        cosmos_health = await self._monitor.async_query_resource(ResourceType.COSMOS_DB)
 
         # SQL DB analysis
         if sql_health.status == HealthStatus.UNHEALTHY:
@@ -103,8 +103,8 @@ class ApiGatewaySubagent(BaseSubagent):
         recommendations = []
         incidents = []
 
-        api_health = self._monitor.query_resource(ResourceType.API)
-        apim_health = self._monitor.query_resource(ResourceType.APIM)
+        api_health = await self._monitor.async_query_resource(ResourceType.API)
+        apim_health = await self._monitor.async_query_resource(ResourceType.APIM)
 
         # API analysis
         if api_health.status == HealthStatus.UNHEALTHY:
@@ -152,7 +152,7 @@ class AIServicesSubagent(BaseSubagent):
         recommendations = []
         incidents = []
 
-        foundry_health = self._monitor.query_resource(ResourceType.FOUNDRY)
+        foundry_health = await self._monitor.async_query_resource(ResourceType.FOUNDRY)
 
         if foundry_health.status == HealthStatus.UNHEALTHY:
             findings.append(f"AI Foundry CRITICAL: {foundry_health.message}")
@@ -186,8 +186,8 @@ class FrontendSubagent(BaseSubagent):
         recommendations = []
         incidents = []
 
-        fe_health = self._monitor.query_resource(ResourceType.FRONTEND)
-        storage_health = self._monitor.query_resource(ResourceType.STORAGE)
+        fe_health = await self._monitor.async_query_resource(ResourceType.FRONTEND)
+        storage_health = await self._monitor.async_query_resource(ResourceType.STORAGE)
 
         # Frontend analysis
         if fe_health.status == HealthStatus.UNHEALTHY:
@@ -231,21 +231,21 @@ class SecuritySubagent(BaseSubagent):
         recommendations = []
 
         # Check APIM unauthorized requests
-        apim_health = self._monitor.query_resource(ResourceType.APIM)
+        apim_health = await self._monitor.async_query_resource(ResourceType.APIM)
         for m in apim_health.metrics:
             if m.name == "UnauthorizedRequests" and m.value and m.value > 50:
                 findings.append(f"High unauthorized request count: {m.value}")
                 recommendations.append("Review APIM access policies and IP restrictions")
 
         # Check SQL connection failures (potential brute force)
-        sql_health = self._monitor.query_resource(ResourceType.SQL_DB)
+        sql_health = await self._monitor.async_query_resource(ResourceType.SQL_DB)
         for m in sql_health.metrics:
             if m.name == "connection_failed" and m.value and m.value > 10:
                 findings.append(f"Elevated SQL connection failures: {m.value}")
                 recommendations.append("Verify firewall rules and check for credential issues")
 
         # Check API 4xx patterns
-        api_health = self._monitor.query_resource(ResourceType.API)
+        api_health = await self._monitor.async_query_resource(ResourceType.API)
         for m in api_health.metrics:
             if m.name == "Http4xx" and m.value and m.value > 100:
                 findings.append(f"High 4xx rate on API: {m.value}")
@@ -272,30 +272,28 @@ class CostSubagent(BaseSubagent):
         recommendations = []
 
         # Check for over-provisioned resources
-        api_health = self._monitor.query_resource(ResourceType.API)
+        api_health = await self._monitor.async_query_resource(ResourceType.API)
         for m in api_health.metrics:
-            if m.name == "CpuPercentage" and m.value is not None and m.value < 10:
-                findings.append(f"API CPU utilization very low: {m.value:.1f}%")
+            if m.name == "AverageMemoryWorkingSet" and m.value is not None and m.value < 50_000_000:
+                findings.append(f"API memory working set very low: {m.value / 1_000_000:.0f} MB")
                 recommendations.append("Consider scaling down App Service plan")
-            if m.name == "MemoryPercentage" and m.value is not None and m.value < 20:
-                findings.append(f"API memory utilization low: {m.value:.1f}%")
 
         # Check Cosmos DB RU usage
-        cosmos_health = self._monitor.query_resource(ResourceType.COSMOS_DB)
+        cosmos_health = await self._monitor.async_query_resource(ResourceType.COSMOS_DB)
         for m in cosmos_health.metrics:
             if m.name == "TotalRequestUnits" and m.value is not None and m.value < 100:
                 findings.append(f"Cosmos DB RU usage very low: {m.value:.0f}")
                 recommendations.append("Consider reducing provisioned RUs or switching to serverless")
 
-        # Check SQL DTU
-        sql_health = self._monitor.query_resource(ResourceType.SQL_DB)
+        # Check SQL CPU
+        sql_health = await self._monitor.async_query_resource(ResourceType.SQL_DB)
         for m in sql_health.metrics:
-            if m.name == "dtu_consumption_percent" and m.value is not None and m.value < 10:
-                findings.append(f"SQL DTU usage very low: {m.value:.1f}%")
+            if m.name == "cpu_percent" and m.value is not None and m.value < 10:
+                findings.append(f"SQL CPU usage very low: {m.value:.1f}%")
                 recommendations.append("Consider downgrading SQL service tier")
 
         # Check AI token usage
-        foundry_health = self._monitor.query_resource(ResourceType.FOUNDRY)
+        foundry_health = await self._monitor.async_query_resource(ResourceType.FOUNDRY)
         for m in foundry_health.metrics:
             if m.name == "TokenTransaction" and m.value is not None:
                 findings.append(f"AI Foundry token usage: {m.value:.0f}")
