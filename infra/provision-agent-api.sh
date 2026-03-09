@@ -7,7 +7,17 @@
 set -euo pipefail
 
 AGENT_ENDPOINT="${1:?Usage: $0 <agent-endpoint>}"
+
+if [[ ! "$AGENT_ENDPOINT" =~ ^https:// ]]; then
+  echo "Error: AGENT_ENDPOINT must start with https:// (got: '$AGENT_ENDPOINT')" >&2
+  exit 1
+fi
+
 TOKEN=$(az account get-access-token --resource "https://azuresre.ai" --query "accessToken" -o tsv)
+if [ -z "$TOKEN" ]; then
+  echo "Error: Failed to obtain token for https://azuresre.ai" >&2
+  exit 1
+fi
 
 api() {
   local method=$1 path=$2

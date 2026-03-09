@@ -171,9 +171,13 @@ jobs:
         run: |
           ENDPOINT=$(az rest --method get \
             --url "https://management.azure.com/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.App/agents/${{ env.AGENT_NAME }}?api-version=2025-05-01-preview" \
-            --query "properties.configuration.ingress.fqdn" -o tsv)
-          echo "endpoint=https://$ENDPOINT" >> "$GITHUB_OUTPUT"
-          echo "Agent endpoint: https://$ENDPOINT"
+            --query "properties.agentEndpoint" -o tsv)
+          if [ -z "$ENDPOINT" ]; then
+            echo "::error::Failed to discover agent endpoint"
+            exit 1
+          fi
+          echo "endpoint=$ENDPOINT" >> "$GITHUB_OUTPUT"
+          echo "Agent endpoint: $ENDPOINT"
 
       - name: Provision scheduled tasks & incident response plans
         run: |
