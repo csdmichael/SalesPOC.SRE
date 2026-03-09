@@ -271,8 +271,46 @@ RUNBOOK:
 4. Check deployments: Review recent deployments for regressions"
 
 echo ""
+
+# ──────────────────────────────────────────────────────────
+#  GitHub Repositories
+# ──────────────────────────────────────────────────────────
+echo "=== Provisioning GitHub Repositories ==="
+
+repo_api() {
+  local method=$1 path=$2
+  shift 2
+  curl -sfS -X "$method" \
+    "${AGENT_ENDPOINT}/api/v2${path}" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -H "Accept: application/json" \
+    "$@"
+}
+
+create_repo() {
+  local name=$1 url=$2 description=$3
+  local body
+  body=$(jq -n --arg n "$name" --arg u "$url" --arg d "$description" \
+    '{name:$n, type:"CodeRepo", properties:{url:$u, type:"github", description:$d}}')
+  # PUT is idempotent — safe to call if repo already exists
+  repo_api PUT "/repos/$name" -d "$body" >/dev/null
+  echo "  [ok] $name"
+}
+
+create_repo "SalesPOC.UI"   "https://github.com/csdmichael/SalesPOC.UI"   "Frontend Angular application"
+create_repo "SalesPOC.API"  "https://github.com/csdmichael/SalesPOC.API"  "Backend .NET API"
+create_repo "SalesPOC.MCP"  "https://github.com/csdmichael/SalesPOC.MCP"  "Model Context Protocol server"
+create_repo "SalesPOC.APIM" "https://github.com/csdmichael/SalesPOC.APIM" "API Management configuration"
+create_repo "SalesPOC.APIC" "https://github.com/csdmichael/SalesPOC.APIC" "API Center configuration"
+create_repo "SalesPOC.DB"   "https://github.com/csdmichael/SalesPOC.DB"   "Database migrations and scripts"
+create_repo "SalesPOC.AI"   "https://github.com/csdmichael/SalesPOC.AI"   "AI Foundry configuration"
+
+echo ""
 echo "=== Summary ==="
 task_count=$(api GET /scheduledtasks | jq 'length')
 trigger_count=$(api GET /httptriggers | jq 'length')
 echo "Scheduled tasks: $task_count"
 echo "Incident response plans: $trigger_count"
+repo_count=$(repo_api GET /repos 2>/dev/null | jq '.repos | length' 2>/dev/null || echo "?")
+echo "GitHub repos: $repo_count"
