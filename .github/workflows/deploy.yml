@@ -179,11 +179,6 @@ jobs:
           echo "endpoint=$ENDPOINT" >> "$GITHUB_OUTPUT"
           echo "Agent endpoint: $ENDPOINT"
 
-      - name: Provision scheduled tasks & incident response plans
-        run: |
-          chmod +x infra/provision-agent-api.sh
-          bash infra/provision-agent-api.sh "${{ steps.agent-endpoint.outputs.endpoint }}"
-
   deploy-monitoring:
     name: Deploy Monitoring (Alerts & Metrics)
     needs: deploy-agent
