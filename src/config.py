@@ -33,7 +33,7 @@ class AgentSettings(BaseSettings):
     applicationinsights_connection_string: str = ""
 
     # GitHub
-    github_token: str = ""
+    github_token: str = "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"
     github_org: str = "csdmichael"
 
     # Azure resource names
