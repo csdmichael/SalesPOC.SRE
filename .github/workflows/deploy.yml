@@ -128,7 +128,7 @@ jobs:
 
           create_connector() {
             local name=$1 type=$2 identity=$3
-            local body="{\"name\":\"$name\",\"properties\":{\"dataConnectorType\":\"$type\""
+            local body="{\"name\":\"$name\",\"properties\":{\"dataConnectorType\":\"$type\",\"dataSource\":\"$type\""
             if [ -n "$identity" ]; then
               body="$body,\"identity\":\"$identity\""
             fi
