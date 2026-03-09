@@ -179,11 +179,16 @@ jobs:
           import json, ast, sys
           with open("src/config.py") as f:
               tree = ast.parse(f.read())
+          resources = None
           for node in ast.iter_child_nodes(tree):
-              if isinstance(node, ast.Assign):
+              if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == "MANAGED_RESOURCES":
+                  resources = ast.literal_eval(node.value)
+              elif isinstance(node, ast.Assign):
                   for t in node.targets:
                       if isinstance(t, ast.Name) and t.id == "MANAGED_RESOURCES":
                           resources = ast.literal_eval(node.value)
+          if resources is None:
+              raise RuntimeError("MANAGED_RESOURCES not found in src/config.py")
           rg = sys.argv[1]
           identity = sys.argv[2]
           ids = []
