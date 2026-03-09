@@ -13,6 +13,18 @@ GITHUB_REPOS: list[dict[str, str]] = [
     {"name": "SalesPOC.AI", "url": "https://github.com/csdmichael/SalesPOC.AI", "component": "ai"},
 ]
 
+MANAGED_RESOURCES: list[dict[str, str]] = [
+    {"provider": "", "path": ""},
+    {"provider": "Microsoft.ApiManagement", "path": "service/apim-poc-my"},
+    {"provider": "Microsoft.Web", "path": "sites/SalesPOC-API"},
+    {"provider": "Microsoft.Sql", "path": "servers/ai-db-poc/databases/ai-db-poc"},
+    {"provider": "Microsoft.DocumentDb", "path": "databaseAccounts/cosmos-ai-poc"},
+    {"provider": "Microsoft.Storage", "path": "storageAccounts/aistoragemyaacoub"},
+    {"provider": "Microsoft.Web", "path": "sites/SalesPOC"},
+    {"provider": "Microsoft.Web", "path": "serverfarms/ASP-aimyaacoub-87dc"},
+    {"provider": "Microsoft.CognitiveServices", "path": "accounts/001-ai-poc"},
+]
+
 
 class AgentSettings(BaseSettings):
     """Settings loaded from environment variables."""

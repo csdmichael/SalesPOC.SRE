@@ -166,6 +166,34 @@ jobs:
             --query "value[].{name:name, type:properties.dataConnectorType, state:properties.provisioningState}" \
             -o table
 
+      - name: Configure managed resources
+        run: |
+          API_BASE="https://management.azure.com/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.App/agents/${{ env.AGENT_NAME }}"
+          API_VER="api-version=2025-05-01-preview"
+
+          # Build managed resources JSON from src/config.py
+          BODY=$(python -c "
+import json, sys
+sys.path.insert(0, '.')
+from src.config import MANAGED_RESOURCES, settings
+rg = f'/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}'
+identity = f'{rg}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{settings.agent_name}-identity'
+ids = []
+for r in MANAGED_RESOURCES:
+    if not r['provider']:
+        ids.append(rg)
+    else:
+        ids.append(f\"{rg}/providers/{r['provider']}/{r['path']}\")
+print(json.dumps({'properties':{'knowledgeGraphConfiguration':{'identity':identity,'managedResources':ids}}}))
+")
+
+          echo "Configuring managed resources..."
+          az rest --method patch \
+            --url "$API_BASE?$API_VER" \
+            --headers "Content-Type=application/json" \
+            --body "$BODY" \
+            --query "properties.knowledgeGraphConfiguration.managedResources" -o json
+
       - name: Discover agent endpoint
         id: agent-endpoint
         run: |
