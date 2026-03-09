@@ -166,7 +166,9 @@ class SREAgent:
 
     async def process_alert_webhook(self, payload: dict) -> dict:
         """Process an Azure Monitor common alert schema webhook."""
-        essentials = payload.get("data", {}).get("essentials", {})
+        data = payload.get("data", {})
+        essentials = data.get("essentials", {})
+        custom_properties = data.get("customProperties", {})
         monitor_condition = essentials.get("monitorCondition", "")
 
         # Only process fired alerts, not resolved
@@ -174,9 +176,14 @@ class SREAgent:
             logger.info("Alert resolved: %s", essentials.get("alertRule", ""))
             return {"status": "ignored", "reason": "alert_resolved"}
 
-        # Resolve plan from alert rule name
         alert_rule = essentials.get("alertRule", "")
-        plan_name = self._resolve_plan_from_alert_rule(alert_rule)
+
+        # Prefer planName from customProperties (set via Bicep webHookProperties)
+        plan_name = custom_properties.get("planName")
+
+        # Fall back to resolving from alert rule name
+        if not plan_name:
+            plan_name = self._resolve_plan_from_alert_rule(alert_rule)
 
         if plan_name and self.incident_mgr.get_plan(plan_name):
             incident = self.incident_mgr.create_incident(
@@ -202,6 +209,9 @@ class SREAgent:
     @staticmethod
     def _resolve_plan_from_alert_rule(alert_rule_name: str) -> str | None:
         """Map Azure Monitor alert rule name to incident plan name."""
+        # Handle full ARM resource IDs by extracting the last segment
+        if "/" in alert_rule_name:
+            alert_rule_name = alert_rule_name.rsplit("/", 1)[-1]
         mapping = {
             "sre-sql-high-cpu": "sql_high_cpu",
             "sre-sql-connection-failures": "sql_connection_failures",
