@@ -116,7 +116,7 @@ jobs:
           az resource show \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.AGENT_NAME }} \
-            --resource-type "Microsoft.App/containerApps" \
+            --resource-type "Microsoft.App/agents" \
             --query "{name:name, provisioningState:properties.provisioningState}" \
             --output table
 
