@@ -166,6 +166,20 @@ jobs:
             --query "value[].{name:name, type:properties.dataConnectorType, state:properties.provisioningState}" \
             -o table
 
+      - name: Discover agent endpoint
+        id: agent-endpoint
+        run: |
+          ENDPOINT=$(az rest --method get \
+            --url "https://management.azure.com/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.App/agents/${{ env.AGENT_NAME }}?api-version=2025-05-01-preview" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "endpoint=https://$ENDPOINT" >> "$GITHUB_OUTPUT"
+          echo "Agent endpoint: https://$ENDPOINT"
+
+      - name: Provision scheduled tasks & incident response plans
+        run: |
+          chmod +x infra/provision-agent-api.sh
+          bash infra/provision-agent-api.sh "${{ steps.agent-endpoint.outputs.endpoint }}"
+
   deploy-monitoring:
     name: Deploy Monitoring (Alerts & Metrics)
     needs: deploy-agent
