@@ -179,6 +179,17 @@ jobs:
           echo "endpoint=$ENDPOINT" >> "$GITHUB_OUTPUT"
           echo "Agent endpoint: $ENDPOINT"
 
+      - name: Enable experimental settings
+        run: |
+          API_BASE="https://management.azure.com/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.App/agents/${{ env.AGENT_NAME }}"
+          API_VER="api-version=2025-05-01-preview"
+          echo "Enabling EnableHttpTriggers..."
+          az rest --method patch \
+            --url "$API_BASE?$API_VER" \
+            --headers "Content-Type=application/json" \
+            --body '{"properties":{"experimentalSettings":{"EnableHttpTriggers":true}}}' \
+            --query "properties.experimentalSettings" -o json
+
   deploy-monitoring:
     name: Deploy Monitoring (Alerts & Metrics)
     needs: deploy-agent
