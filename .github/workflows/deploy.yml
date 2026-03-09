@@ -172,20 +172,20 @@ jobs:
           API_VER="api-version=2025-05-01-preview"
 
           # Build managed resources JSON from src/config.py
-          BODY=$(python -c "
-import json, sys
-sys.path.insert(0, '.')
-from src.config import MANAGED_RESOURCES, settings
-rg = f'/subscriptions/{settings.azure_subscription_id}/resourceGroups/{settings.azure_resource_group}'
-identity = f'{rg}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/{settings.agent_name}-identity'
-ids = []
-for r in MANAGED_RESOURCES:
-    if not r['provider']:
-        ids.append(rg)
-    else:
-        ids.append(f\"{rg}/providers/{r['provider']}/{r['path']}\")
-print(json.dumps({'properties':{'knowledgeGraphConfiguration':{'identity':identity,'managedResources':ids}}}))
-")
+          BODY=$(python3 -c '
+          import json, sys
+          sys.path.insert(0, ".")
+          from src.config import MANAGED_RESOURCES, settings
+          rg = "/subscriptions/" + settings.azure_subscription_id + "/resourceGroups/" + settings.azure_resource_group
+          identity = rg + "/providers/Microsoft.ManagedIdentity/userAssignedIdentities/" + settings.agent_name + "-identity"
+          ids = []
+          for r in MANAGED_RESOURCES:
+              if not r["provider"]:
+                  ids.append(rg)
+              else:
+                  ids.append(rg + "/providers/" + r["provider"] + "/" + r["path"])
+          print(json.dumps({"properties":{"knowledgeGraphConfiguration":{"identity":identity,"managedResources":ids}}}))
+          ')
 
           echo "Configuring managed resources..."
           az rest --method patch \
