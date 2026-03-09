@@ -166,7 +166,7 @@ jobs:
             --query "value[].{name:name, type:properties.dataConnectorType, state:properties.provisioningState}" \
             -o table
 
-      - name: Configure managed resources
+      - name: Configure managed resources and features
         run: |
           API_BASE="https://management.azure.com/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.App/agents/${{ env.AGENT_NAME }}"
           API_VER="api-version=2025-05-01-preview"
@@ -197,15 +197,15 @@ jobs:
                   ids.append(rg)
               else:
                   ids.append(rg + "/providers/" + r["provider"] + "/" + r["path"])
-          print(json.dumps({"properties":{"knowledgeGraphConfiguration":{"identity":identity,"managedResources":ids}}}))
+          print(json.dumps({"properties":{"knowledgeGraphConfiguration":{"identity":identity,"managedResources":ids},"experimentalSettings":{"EnableHttpTriggers":True}}}))
           ' "$RG" "$IDENTITY")
 
-          echo "Configuring managed resources..."
+          echo "Configuring managed resources and experimental settings..."
           az rest --method patch \
             --url "$API_BASE?$API_VER" \
             --headers "Content-Type=application/json" \
             --body "$BODY" \
-            --query "properties.knowledgeGraphConfiguration.managedResources" -o json
+            -o json
 
       - name: Discover agent endpoint
         id: agent-endpoint
@@ -220,16 +220,6 @@ jobs:
           echo "endpoint=$ENDPOINT" >> "$GITHUB_OUTPUT"
           echo "Agent endpoint: $ENDPOINT"
 
-      - name: Enable experimental settings
-        run: |
-          API_BASE="https://management.azure.com/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.App/agents/${{ env.AGENT_NAME }}"
-          API_VER="api-version=2025-05-01-preview"
-          echo "Enabling EnableHttpTriggers..."
-          az rest --method patch \
-            --url "$API_BASE?$API_VER" \
-            --headers "Content-Type=application/json" \
-            --body '{"properties":{"experimentalSettings":{"EnableHttpTriggers":true}}}' \
-            --query "properties.experimentalSettings" -o json
 
   deploy-monitoring:
     name: Deploy Monitoring (Alerts & Metrics)
