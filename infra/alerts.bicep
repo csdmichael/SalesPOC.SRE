@@ -83,7 +83,7 @@ var alertConfigs = [
   { name: 'sre-storage-high-latency', desc: 'Storage E2E latency > 500ms', sev: 3, target: storageId, metric: 'SuccessE2ELatency', op: 'GreaterThan', thresh: 500, agg: 'Average', plan: 'storage_high_latency' }
 
   // API (App Service)
-  { name: 'sre-api-5xx-spike', desc: 'API 5xx errors > 20 in 5min', sev: 1, target: apiId, metric: 'Http5xx', op: 'GreaterThan', thresh: 20, agg: 'Total', plan: 'api_5xx_spike' }
+  { name: 'sre-api-5xx-spike', desc: 'API 5xx errors > 5 in 1min', sev: 1, target: apiId, metric: 'Http5xx', op: 'GreaterThan', thresh: 5, agg: 'Total', plan: 'api_5xx_spike', evalFreq: 'PT1M', winSize: 'PT1M' }
   { name: 'sre-api-high-response-time', desc: 'API response time > 3s', sev: 2, target: apiId, metric: 'HttpResponseTime', op: 'GreaterThan', thresh: 3, agg: 'Average', plan: 'api_high_response_time' }
   { name: 'sre-api-cpu-exhaustion', desc: 'App Service Plan CPU > 90%', sev: 2, target: appServicePlanId, metric: 'CpuPercentage', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'api_resource_exhaustion' }
   { name: 'sre-api-memory-exhaustion', desc: 'App Service Plan memory > 90%', sev: 2, target: appServicePlanId, metric: 'MemoryPercentage', op: 'GreaterThan', thresh: 90, agg: 'Average', plan: 'api_resource_exhaustion' }
@@ -110,8 +110,8 @@ resource metricAlerts 'Microsoft.Insights/metricAlerts@2018-03-01' = [for config
     severity: config.sev
     enabled: true
     scopes: [config.target]
-    evaluationFrequency: 'PT5M'
-    windowSize: 'PT5M'
+    evaluationFrequency: contains(config, 'evalFreq') ? config.evalFreq : 'PT5M'
+    windowSize: contains(config, 'winSize') ? config.winSize : 'PT5M'
     criteria: {
       'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
       allOf: [

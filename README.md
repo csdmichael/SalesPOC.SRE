@@ -469,7 +469,7 @@ All rules evaluate every 5 minutes with a 5-minute window. Action group `sre-ai-
 | `sre-cosmos-replication-lag` | Cosmos DB | Replication latency | > 500ms | 2 |
 | `sre-storage-availability-drop` | Storage | Availability | < 99% | 1 |
 | `sre-storage-high-latency` | Storage | E2E Latency | > 500ms | 3 |
-| `sre-api-5xx-spike` | API | Http5xx | > 20 | 1 |
+| `sre-api-5xx-spike` | API | Http5xx | > 5 (1min window, 1min eval) | 1 |
 | `sre-api-high-response-time` | API | Response time | > 3s | 2 |
 | `sre-api-cpu-exhaustion` | App Plan | CPU % | > 90% | 2 |
 | `sre-api-memory-exhaustion` | App Plan | Memory % | > 90% | 2 |
