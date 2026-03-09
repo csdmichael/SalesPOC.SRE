@@ -120,6 +120,52 @@ jobs:
             --query "{name:name, provisioningState:properties.provisioningState}" \
             --output table
 
+      - name: Provision SRE Agent connectors
+        run: |
+          API_BASE="https://management.azure.com/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.App/agents/${{ env.AGENT_NAME }}"
+          API_VER="api-version=2025-05-01-preview"
+          IDENTITY="/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourcegroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${{ env.AGENT_NAME }}-identity"
+
+          create_connector() {
+            local name=$1 type=$2 identity=$3
+            local body="{\"name\":\"$name\",\"properties\":{\"dataConnectorType\":\"$type\""
+            if [ -n "$identity" ]; then
+              body="$body,\"identity\":\"$identity\""
+            fi
+            body="$body}}"
+
+            existing=$(az rest --method get --url "$API_BASE/connectors/$name?$API_VER" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "")
+            if [ "$existing" = "Succeeded" ]; then
+              echo "Connector '$name' already exists — skipping"
+              return
+            fi
+
+            echo "Creating connector '$name' (type=$type)..."
+            az rest --method put \
+              --url "$API_BASE/connectors/$name?$API_VER" \
+              --headers "Content-Type=application/json" \
+              --body "$body" \
+              --query "{name:name, type:properties.dataConnectorType, state:properties.provisioningState}" \
+              -o table
+
+            for i in $(seq 1 12); do
+              sleep 10
+              state=$(az rest --method get --url "$API_BASE/connectors/$name?$API_VER" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "Unknown")
+              echo "  $name: $state"
+              if [ "$state" = "Succeeded" ] || [ "$state" = "Failed" ]; then break; fi
+            done
+          }
+
+          create_connector "azuremonitor" "AzureMonitor" "$IDENTITY"
+          create_connector "azureresourcegraph" "AzureResourceGraph" "$IDENTITY"
+          create_connector "github" "GitHub" ""
+
+          echo ""
+          echo "Final connector state:"
+          az rest --method get --url "$API_BASE/connectors?$API_VER" \
+            --query "value[].{name:name, type:properties.dataConnectorType, state:properties.provisioningState}" \
+            -o table
+
   deploy-monitoring:
     name: Deploy Monitoring (Alerts & Metrics)
     needs: deploy-agent
