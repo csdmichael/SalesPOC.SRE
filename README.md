@@ -345,7 +345,16 @@ The `Microsoft.App/agents` resource requires data connectors to integrate with e
 | `azureresourcegraph` | AzureResourceGraph | User-assigned MI | Resource discovery & topology |
 | `github` | GitHub | — | Repository access for code-aware incident response |
 
-Incident response plans and scheduled tasks are provisioned via the agent's own REST API (separate from the ARM API) using [infra/provision-agent-api.sh](infra/provision-agent-api.sh). The deploy workflow runs this script automatically after connector setup.
+Incident response plans, scheduled tasks, and GitHub repos are provisioned via the agent's own REST API (separate from the ARM API) using [infra/provision-agent-api.sh](infra/provision-agent-api.sh).
+
+> **Note:** The Azure SRE Agent API only accepts **user-delegated tokens** (interactive login). Service principal / OIDC tokens are rejected because the `Azure SRE Agent` app registration (`59f0a04a-b322-4310-adc9-39ac41e9631e`) has no app roles — only a delegated scope (`Threads.ReadWrite.All`). This means `provision-agent-api.sh` **cannot** run in CI/CD and must be run manually:
+>
+> ```bash
+> az login
+> bash infra/provision-agent-api.sh https://sre-ai-my--0cad75dc.4650bed8.eastus2.azuresre.ai
+> ```
+>
+> The script is idempotent — safe to re-run at any time. Run it once during initial setup and whenever task/trigger definitions change.
 
 ### Agent REST API
 
@@ -445,7 +454,7 @@ Access to use this agent requires an Azure RBAC **SRE Agent Reader** role or hig
 │   ├── main.bicep                 # Container App, Log Analytics, Identity, RBAC
 │   ├── main.bicepparam            # Bicep parameters
 │   ├── alerts.bicep               # Azure Monitor alert rules + action group (parameterized)
-│   └── provision-agent-api.sh     # Provisions scheduled tasks & incident plans via agent API
+│   └── provision-agent-api.sh     # Provisions scheduled tasks, incident plans & repos via agent API (manual)
 ├── src/
 │   ├── __init__.py
 │   ├── agent.py                   # SRE agent core + webhook processing
