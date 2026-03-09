@@ -77,27 +77,40 @@ create_task "Daily SRE Report" "0 8 * * *" \
 echo ""
 
 # ──────────────────────────────────────────────────────────
-#  Incident Response Plans (HTTP Triggers)
+#  Incident Response Plans (Handlers + Filters)
 # ──────────────────────────────────────────────────────────
 echo "=== Provisioning Incident Response Plans ==="
 
-existing_triggers=$(api GET /httptriggers | jq -r '.[].name // empty' 2>/dev/null || echo "")
+existing_handlers=$(api GET /incidentplayground/handlers | jq -r '.[].id // empty' 2>/dev/null || echo "")
 
-create_trigger() {
-  local name=$1 description=$2 prompt=$3
-  if echo "$existing_triggers" | grep -qF "$name"; then
+create_handler() {
+  local id=$1 name=$2 description=$3 prompt=$4
+  shift 4
+  local priorities=("$@")
+
+  if echo "$existing_handlers" | grep -qF "$id"; then
     echo "  [skip] $name (already exists)"
     return
   fi
-  local body
-  body=$(jq -n --arg n "$name" --arg d "$description" --arg p "$prompt" \
-    '{name:$n, description:$d, agentPrompt:$p, agentMode:"autonomous"}')
-  api POST /httptriggers/create -d "$body" >/dev/null
+
+  # Create incident filter
+  local prio_json
+  prio_json=$(printf '%s\n' "${priorities[@]}" | jq -R . | jq -s .)
+  local filter_body
+  filter_body=$(jq -n --arg i "$id" --arg n "$name Filter" --argjson p "$prio_json" \
+    '{id:$i, name:$n, priorities:$p, incidentType:"", handlingAgent:"", agentMode:"autonomous", deepInvestigationEnabled:false}')
+  api PUT "/incidentplayground/filters/$id" -d "$filter_body" >/dev/null 2>&1 || true
+
+  # Create incident handler
+  local handler_body
+  handler_body=$(jq -n --arg i "$id" --arg n "$name" --arg d "$description" --arg g "$prompt" \
+    '{id:$i, name:$n, description:$d, incidentFilterId:$i, incidentProcessingGuide:[$g], tools:[], incidents:[], customInstructions:""}')
+  api PUT "/incidentplayground/handlers/$id" -d "$handler_body" >/dev/null
   echo "  [created] $name"
 }
 
 # SQL Database
-create_trigger "SQL High CPU" \
+create_handler "sql-high-cpu" "SQL High CPU" \
   "SQL Database CPU consumption critically high (cpu_percent > 90%)" \
   "INCIDENT: SQL Database High CPU. Severity: SEV2. Trigger: cpu_percent > 90%.
 RUNBOOK:
@@ -107,9 +120,10 @@ RUNBOOK:
 3. Scale up compute: Temporarily scale to a higher vCore tier if load is legitimate
    Command: az sql db update --name ai-db-poc --server ai-db-poc --resource-group ai-myaacoub --service-objective S3
 4. Notify team: Alert backend team to investigate query patterns
-Auto-remediate: Yes"
+Auto-remediate: Yes" \
+  Sev2
 
-create_trigger "SQL Connection Failures" \
+create_handler "sql-connection-failures" "SQL Connection Failures" \
   "SQL Database experiencing connection failures (connection_failed > 20 in 5min)" \
   "INCIDENT: SQL Connection Failures. Severity: SEV1 (Critical). Trigger: connection_failed > 20 in 5min.
 RUNBOOK:
@@ -117,27 +131,30 @@ RUNBOOK:
 2. Check server status: Verify SQL server is responding
    Command: az sql server show --name ai-db-poc --resource-group ai-myaacoub --query '{state:state,fullyQualifiedDomainName:fullyQualifiedDomainName}'
 3. Check connection pool: Review API connection pool settings and active connections
-4. Restart API service: Restart the API App Service to reset connection pools"
+4. Restart API service: Restart the API App Service to reset connection pools" \
+  Sev0 Sev1
 
-create_trigger "SQL Deadlocks" \
+create_handler "sql-deadlocks" "SQL Deadlocks" \
   "SQL Database deadlocks detected (deadlock > 5 in 5min)" \
   "INCIDENT: SQL Deadlocks. Severity: SEV2. Trigger: deadlock > 5 in 5min.
 RUNBOOK:
 1. Capture deadlock graph: Enable extended events to capture deadlock XML
 2. Identify conflicting transactions: Analyze lock ordering in application code
-3. Apply index tuning: Check missing indexes that may reduce lock contention"
+3. Apply index tuning: Check missing indexes that may reduce lock contention" \
+  Sev2
 
-create_trigger "SQL Storage Critical" \
+create_handler "sql-storage-critical" "SQL Storage Critical" \
   "SQL Database running out of storage (storage_percent > 90%)" \
   "INCIDENT: SQL Storage Critical. Severity: SEV2. Trigger: storage_percent > 90%.
 RUNBOOK:
 1. Identify large tables: Query sys.dm_db_partition_stats for table sizes
 2. Archive old data: Move historical records to cold storage
 3. Scale storage: Increase max database size
-   Command: az sql db update --name ai-db-poc --server ai-db-poc --resource-group ai-myaacoub --max-size 250GB"
+   Command: az sql db update --name ai-db-poc --server ai-db-poc --resource-group ai-myaacoub --max-size 250GB" \
+  Sev2
 
 # Cosmos DB
-create_trigger "Cosmos DB Throttling" \
+create_handler "cosmos-db-throttling" "Cosmos DB Throttling" \
   "Cosmos DB request throttling - 429s (Http429 > 50 in 5min)" \
   "INCIDENT: Cosmos DB Throttling (429s). Severity: SEV2. Trigger: Http429 > 50 in 5min.
 RUNBOOK:
@@ -147,18 +164,20 @@ RUNBOOK:
 3. Scale RU throughput: Increase provisioned or autoscale max RUs
    Command: az cosmosdb sql container throughput update --account-name cosmos-ai-poc --database-name salespoc --name orders --resource-group ai-myaacoub --throughput 1000
 4. Review query patterns: Optimize cross-partition queries
-Auto-remediate: Yes"
+Auto-remediate: Yes" \
+  Sev2
 
-create_trigger "Cosmos DB Replication Lag" \
+create_handler "cosmos-db-replication-lag" "Cosmos DB Replication Lag" \
   "Cosmos DB geo-replication lag is high (ReplicationLatency > 500ms)" \
   "INCIDENT: Cosmos DB Replication Lag. Severity: SEV2. Trigger: ReplicationLatency > 500ms.
 RUNBOOK:
 1. Check region status: Verify all configured regions are online
 2. Review consistency level: Check if strong consistency is causing bottleneck
-3. Check write volume: Unusually high write volume can increase replication lag"
+3. Check write volume: Unusually high write volume can increase replication lag" \
+  Sev2
 
 # Storage
-create_trigger "Storage Availability Drop" \
+create_handler "storage-availability-drop" "Storage Availability Drop" \
   "Storage account availability below SLA (Availability < 99.0%)" \
   "INCIDENT: Storage Availability Drop. Severity: SEV1 (Critical). Trigger: Availability < 99.0%.
 RUNBOOK:
@@ -166,18 +185,20 @@ RUNBOOK:
 2. Check storage account health: Review storage account diagnostics
    Command: az storage account show --name aistoragemyaacoub --resource-group ai-myaacoub --query '{provisioningState:provisioningState,statusOfPrimary:statusOfPrimary}'
 3. Initiate failover: Trigger account failover to secondary if GRS configured
-4. Verify blob containers: Check container-level access and lease status"
+4. Verify blob containers: Check container-level access and lease status" \
+  Sev0 Sev1
 
-create_trigger "Storage High Latency" \
+create_handler "storage-high-latency" "Storage High Latency" \
   "Storage account experiencing high latency (SuccessE2ELatency > 500ms)" \
   "INCIDENT: Storage High Latency. Severity: SEV3. Trigger: SuccessE2ELatency > 500ms.
 RUNBOOK:
 1. Check throttling: Review if storage account is being throttled
 2. Analyze request patterns: Look for large sequential reads that should be parallelized
-3. Consider CDN: Enable Azure CDN for frequently accessed blobs"
+3. Consider CDN: Enable Azure CDN for frequently accessed blobs" \
+  Sev3
 
 # API (App Service)
-create_trigger "API 5xx Spike" \
+create_handler "api-5xx-spike" "API 5xx Spike" \
   "API returning high rate of server errors (Http5xx > 20 in 5min)" \
   "INCIDENT: API 5xx Spike. Severity: SEV1 (Critical). Trigger: Http5xx > 20 in 5min.
 RUNBOOK:
@@ -188,18 +209,20 @@ RUNBOOK:
    Command: az webapp restart --name SalesPOC-API --resource-group ai-myaacoub
 4. Scale out: Add instances if load is too high
    Command: az appservice plan update --name ASP-aimyaacoub-87dc --resource-group ai-myaacoub --number-of-workers 3
-Auto-remediate: Yes"
+Auto-remediate: Yes" \
+  Sev0 Sev1
 
-create_trigger "API High Response Time" \
+create_handler "api-high-response-time" "API High Response Time" \
   "API response times critically slow (HttpResponseTime > 3s)" \
   "INCIDENT: API High Response Time. Severity: SEV2. Trigger: HttpResponseTime > 3s.
 RUNBOOK:
 1. Profile slow endpoints: Use App Insights to identify slowest routes
 2. Check downstream latency: Verify SQL and Cosmos response times
 3. Scale up/out: Increase App Service plan tier or instance count
-4. Review connection pooling: Check for connection exhaustion"
+4. Review connection pooling: Check for connection exhaustion" \
+  Sev2
 
-create_trigger "API Resource Exhaustion" \
+create_handler "api-resource-exhaustion" "API Resource Exhaustion" \
   "API server resource exhaustion (CpuPercentage > 90% OR MemoryPercentage > 90%)" \
   "INCIDENT: API Resource Exhaustion. Severity: SEV2. Trigger: CpuPercentage > 90% OR MemoryPercentage > 90%.
 RUNBOOK:
@@ -208,10 +231,11 @@ RUNBOOK:
    Command: az appservice plan update --name ASP-aimyaacoub-87dc --resource-group ai-myaacoub --number-of-workers 4
 3. Scale up: Move to higher App Service plan tier
 4. Check for memory leaks: Review App Insights memory trends over 24h
-Auto-remediate: Yes"
+Auto-remediate: Yes" \
+  Sev2
 
 # APIM
-create_trigger "APIM Capacity High" \
+create_handler "apim-capacity-high" "APIM Capacity High" \
   "API Management gateway capacity near limit (Capacity > 90%)" \
   "INCIDENT: APIM Capacity High. Severity: SEV2. Trigger: Capacity > 90%.
 RUNBOOK:
@@ -219,28 +243,31 @@ RUNBOOK:
 2. Scale APIM units: Add capacity units to APIM instance
    Command: az apim update --name apim-poc-my --resource-group ai-myaacoub --sku-capacity 2
 3. Enable rate limiting: Apply or tighten rate-limit policies
-4. Review caching: Ensure response caching is configured for eligible APIs"
+4. Review caching: Ensure response caching is configured for eligible APIs" \
+  Sev2
 
-create_trigger "APIM Backend Slow" \
+create_handler "apim-backend-slow" "APIM Backend Slow" \
   "APIM backend response times critically slow (BackendDuration > 5000ms)" \
   "INCIDENT: APIM Backend Slow. Severity: SEV2. Trigger: BackendDuration > 5000ms.
 RUNBOOK:
 1. Identify slow backend: Check per-API backend duration in diagnostics
 2. Check API health: Verify backend App Service is healthy
 3. Check circuit breaker: Review APIM retry/timeout policies
-4. Enable response caching: Cache responses for read-heavy endpoints"
+4. Enable response caching: Cache responses for read-heavy endpoints" \
+  Sev2
 
-create_trigger "APIM Unauthorized Request Spike" \
+create_handler "apim-unauthorized-spike" "APIM Unauthorized Request Spike" \
   "Spike in unauthorized API requests - potential security concern (UnauthorizedRequests > 100 in 5min)" \
   "INCIDENT: APIM Unauthorized Request Spike. Severity: SEV2. Trigger: UnauthorizedRequests > 100 in 5min.
 RUNBOOK:
 1. Analyze request origins: Check source IPs for patterns
 2. Review subscription keys: Verify no keys were revoked or expired
 3. Enable IP filtering: Block suspicious IPs via APIM policy
-4. Rotate credentials: Rotate subscription keys if compromise suspected"
+4. Rotate credentials: Rotate subscription keys if compromise suspected" \
+  Sev2
 
 # AI Foundry
-create_trigger "AI Foundry High Error Rate" \
+create_handler "ai-foundry-high-error-rate" "AI Foundry High Error Rate" \
   "AI Foundry model error rate elevated (TotalErrors > 20 in 5min)" \
   "INCIDENT: AI Foundry High Error Rate. Severity: SEV2. Trigger: TotalErrors > 20 in 5min.
 RUNBOOK:
@@ -248,19 +275,21 @@ RUNBOOK:
    Command: az cognitiveservices account show --name 001-ai-poc --resource-group ai-myaacoub --query '{provisioningState:properties.provisioningState}'
 2. Review error types: Categorize errors (rate limit, model errors, input validation)
 3. Check quota: Verify TPM/RPM limits haven't been exceeded
-4. Fallback model: Switch to fallback model deployment if primary fails"
+4. Fallback model: Switch to fallback model deployment if primary fails" \
+  Sev2
 
-create_trigger "AI Foundry High Latency" \
+create_handler "ai-foundry-high-latency" "AI Foundry High Latency" \
   "AI Foundry inference latency is high (Latency > 5000ms)" \
   "INCIDENT: AI Foundry High Latency. Severity: SEV3. Trigger: Latency > 5000ms.
 RUNBOOK:
 1. Check prompt sizes: Review if input token counts have increased
 2. Check regional load: Verify Azure region is not experiencing congestion
 3. Reduce max_tokens: Lower max output tokens to reduce generation time
-4. Add retry with backoff: Implement exponential backoff for retries"
+4. Add retry with backoff: Implement exponential backoff for retries" \
+  Sev3
 
 # Frontend
-create_trigger "Frontend HTTP Errors" \
+create_handler "frontend-http-errors" "Frontend HTTP Errors" \
   "Frontend App Service HTTP 5xx errors elevated (Http5xx > 20 in 5min)" \
   "INCIDENT: Frontend HTTP Errors. Severity: SEV2. Trigger: Http5xx > 20 in 5min.
 RUNBOOK:
@@ -268,7 +297,8 @@ RUNBOOK:
 2. Check linked API: Verify APIM and backend API connectivity
 3. Restart frontend: Restart the App Service
    Command: az webapp restart --name SalesPOC --resource-group ai-myaacoub
-4. Check deployments: Review recent deployments for regressions"
+4. Check deployments: Review recent deployments for regressions" \
+  Sev2
 
 echo ""
 
@@ -309,8 +339,8 @@ create_repo "SalesPOC.AI"   "https://github.com/csdmichael/SalesPOC.AI"   "AI Fo
 echo ""
 echo "=== Summary ==="
 task_count=$(api GET /scheduledtasks | jq 'length')
-trigger_count=$(api GET /httptriggers | jq 'length')
+handler_count=$(api GET /incidentplayground/handlers | jq 'length')
 echo "Scheduled tasks: $task_count"
-echo "Incident response plans: $trigger_count"
+echo "Incident response plans: $handler_count"
 repo_count=$(repo_api GET /repos 2>/dev/null | jq '.repos | length' 2>/dev/null || echo "?")
 echo "GitHub repos: $repo_count"

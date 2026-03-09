@@ -1,0 +1,4 @@
+=== Platform Type ===
+{"incidentPlatformType":"AzMonitor"}
+=== Handlers ===
+[]

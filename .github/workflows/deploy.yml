@@ -170,22 +170,30 @@ jobs:
         run: |
           API_BASE="https://management.azure.com/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}/providers/Microsoft.App/agents/${{ env.AGENT_NAME }}"
           API_VER="api-version=2025-05-01-preview"
+          SUB="/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}"
+          RG="$SUB/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}"
+          IDENTITY="$RG/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${{ env.AGENT_NAME }}-identity"
 
-          # Build managed resources JSON from src/config.py
+          # Build managed resources JSON from src/config.py (extract list without importing pydantic)
           BODY=$(python3 -c '
-          import json, sys
-          sys.path.insert(0, ".")
-          from src.config import MANAGED_RESOURCES, settings
-          rg = "/subscriptions/" + settings.azure_subscription_id + "/resourceGroups/" + settings.azure_resource_group
-          identity = rg + "/providers/Microsoft.ManagedIdentity/userAssignedIdentities/" + settings.agent_name + "-identity"
+          import json, ast, sys
+          with open("src/config.py") as f:
+              tree = ast.parse(f.read())
+          for node in ast.iter_child_nodes(tree):
+              if isinstance(node, ast.Assign):
+                  for t in node.targets:
+                      if isinstance(t, ast.Name) and t.id == "MANAGED_RESOURCES":
+                          resources = ast.literal_eval(node.value)
+          rg = sys.argv[1]
+          identity = sys.argv[2]
           ids = []
-          for r in MANAGED_RESOURCES:
+          for r in resources:
               if not r["provider"]:
                   ids.append(rg)
               else:
                   ids.append(rg + "/providers/" + r["provider"] + "/" + r["path"])
           print(json.dumps({"properties":{"knowledgeGraphConfiguration":{"identity":identity,"managedResources":ids}}}))
-          ')
+          ' "$RG" "$IDENTITY")
 
           echo "Configuring managed resources..."
           az rest --method patch \
