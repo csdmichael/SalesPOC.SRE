@@ -11,6 +11,7 @@ GITHUB_REPOS: list[dict[str, str]] = [
     {"name": "SalesPOC.APIC", "url": "https://github.com/csdmichael/SalesPOC.APIC", "component": "apic"},
     {"name": "SalesPOC.DB", "url": "https://github.com/csdmichael/SalesPOC.DB", "component": "db"},
     {"name": "SalesPOC.AI", "url": "https://github.com/csdmichael/SalesPOC.AI", "component": "ai"},
+    {"name": "SalesPOC.ACA", "url": "https://github.com/csdmichael/SalesPOC.Containerized.API", "component": "ai"},
 ]
 
 MANAGED_RESOURCES: list[dict[str, str]] = [
