@@ -1,6 +1,8 @@
 # SRE Agent: sre-ai-my
 
-An Azure SRE Agent that automatically monitors, diagnoses, and remediates issues across the Sales POC infrastructure. It watches 7 Azure resources and 7 GitHub repos around the clock — no human on-call needed for common incidents.
+An Azure SRE Agent that automatically monitors, diagnoses, and remediates issues across the Sales POC infrastructure. It watches 7 Azure resources and 10 GitHub repos around the clock — no human on-call needed for common incidents.
+
+**Monitored Application:** [https://salespoc.azurewebsites.net](https://salespoc.azurewebsites.net)
 
 ## What Does It Do?
 
@@ -113,10 +115,10 @@ graph LR
 | **API** | `SalesPOC-API` | 5xx errors, response time, CPU/memory |
 | **APIM** | `apim-poc-my` | Capacity, backend duration, unauthorized requests |
 | **AI Foundry** | `001-ai-poc` | Error rate, inference latency |
-| **Frontend** | `SalesPOC` | HTTP errors, response time |
+| **Frontend** | [`SalesPOC`](https://salespoc.azurewebsites.net) | HTTP errors, response time |
 
-It also monitors **7 GitHub repos** for failing CI/CD, open PRs, and dependency alerts:
-`SalesPOC.UI` · `SalesPOC.API` · `SalesPOC.MCP` · `SalesPOC.APIM` · `SalesPOC.APIC` · `SalesPOC.DB` · `SalesPOC.AI`
+It also monitors **10 GitHub repos** for failing CI/CD, open PRs, and dependency alerts:
+`SalesPOC.UI` · `SalesPOC.API` · `SalesPOC.MCP` · `SalesPOC.APIM` · `SalesPOC.APIC` · `SalesPOC.DB` · `SalesPOC.AI` · `SalesPOC.Containerized.API` · `SalesPOC.APIC.Consumer` · `SalesPOC.SRE`
 
 ---
 
@@ -155,7 +157,7 @@ The agent doesn't just wait for alerts — it actively looks for problems on a s
 | **Health Check All Resources** | 5 min | Checks CPU, memory, availability, error rates, connections across all 7 resources |
 | **Subagent Analysis** | 15 min | Runs 6 specialized subagents (Database, API, AI, Frontend, Security, Cost) |
 | **Security Scan** | 15 min | Scans for unauthorized access spikes, misconfigured RBAC, exposed secrets, firewall issues |
-| **GitHub Repo Check** | 1 hour | Checks for failing CI/CD, PRs awaiting review, high-priority issues, dependency alerts |
+| **GitHub Repo Check** | 1 hour | Checks for failing CI/CD, PRs awaiting review, high-priority issues, dependency alerts across all 10 repos |
 | **Cost Analysis** | 6 hours | Reviews spending vs budget, idle resources, right-sizing opportunities |
 | **Daily SRE Report** | 8 AM UTC | 24-hour summary: health, incidents, metrics, alerts, GitHub activity, cost trends |
 
@@ -216,7 +218,7 @@ bash infra/provision-agent-api.sh https://sre-ai-my--0cad75dc.4650bed8.eastus2.a
 The script is idempotent — safe to re-run anytime. It creates:
 - 6 scheduled tasks
 - 17 incident response plan filters + handlers
-- 7 GitHub repository connections
+- 10 GitHub repository connections
 
 ### 3. Connect GitHub (One Time)
 
@@ -348,6 +350,9 @@ graph TB
         APIC_R[SalesPOC.APIC]
         DB_R[SalesPOC.DB]
         AI_R[SalesPOC.AI]
+        CONT_R[SalesPOC.Containerized.API]
+        APICC_R[SalesPOC.APIC.Consumer]
+        SRE_R[SalesPOC.SRE]
     end
 
     Agent --> Sched
@@ -389,6 +394,9 @@ graph TB
     GH --> APIC_R
     GH --> DB_R
     GH --> AI_R
+    GH --> CONT_R
+    GH --> APICC_R
+    GH --> SRE_R
 ```
 
 ### Data Connectors
