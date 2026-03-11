@@ -239,6 +239,7 @@ jobs:
           subscriptionId: ${{ env.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
           template: ./infra/alerts.bicep
+          failOnStdErr: false
           parameters: >
             webhookUrl=https://${{ needs.deploy-agent.outputs.containerAppFqdn }}/api/alerts/webhook
 
