@@ -15,28 +15,7 @@ A step-by-step demo walkthrough for the Azure SRE Agent that monitors, diagnoses
 
 ---
 
-## Part 1 — Agent Chat
-
-Open the SRE Agent in the Azure portal and use the **Chat** pane to interact with it directly.
-
-**Try these prompts:**
-
-| Prompt | What it demonstrates |
-|---|---|
-| *"What are API Response times for all apis last 7 days on ai-myaacoub resource group?"* | Queries Azure Monitor metrics across multiple resources over a time range |
-| *"Plot a pie chart for apps hosted on app services vs container apps vs AKS"* | Uses Resource Graph to inventory compute resources and renders a chart |
-| *"List azure resources sorted by highest price for last 30 days in resource group ai-myaacoub. Plot on bar chart"* | Pulls cost data and visualizes spending per resource |
-| *"Does my API Management instance have any unhealthy backend apps?"* | Checks APIM backend health status in real time |
-| *"What are the apis hosted on apim-poc-my?"* | Lists APIs registered in the APIM instance |
-| *"What is the current health of SalesPOC-API?"* | Real-time health check of a single resource |
-| *"Are there any active incidents?"* | Queries incident state |
-| *"Check the latest deployments across our GitHub repos"* | Uses the GitHub connector to review CI/CD status |
-
-The agent uses its managed identity (`sre-ai-my-identity`) with **Contributor** access to query and act on resources.
-
----
-
-## Part 2 — Connectors
+## Part 1 — Connectors
 
 Navigate to the **Connectors** tab in the SRE Agent portal. Three connectors provide data access:
 
@@ -51,9 +30,22 @@ Navigate to the **Connectors** tab in the SRE Agent portal. Three connectors pro
 - Explain that the managed identity is used for Azure connectors
 - GitHub uses a PAT for repository access
 
+**GitHub repositories:**
+
+| Repository | URL |
+|---|---|
+| SalesPOC.UI | https://github.com/csdmichael/SalesPOC.UI |
+| SalesPOC.API | https://github.com/csdmichael/SalesPOC.API |
+| SalesPOC.MCP | https://github.com/csdmichael/SalesPOC.MCP |
+| SalesPOC.APIM | https://github.com/csdmichael/SalesPOC.APIM |
+| SalesPOC.DB | https://github.com/csdmichael/SalesPOC.DB |
+| SalesPOC.AI | https://github.com/csdmichael/SalesPOC.AI |
+| SalesPOC.Containerized.API | https://github.com/csdmichael/SalesPOC.Containerized.API |
+| SalesPOC.SRE | https://github.com/csdmichael/SalesPOC.SRE |
+
 ---
 
-## Part 3 — Settings
+## Part 2 — Settings
 
 Review the agent's configuration in the **Settings** tab:
 
@@ -78,6 +70,27 @@ Review the agent's configuration in the **Settings** tab:
 | AI Foundry | `001-ai-poc` |
 | App Service (Frontend) | `SalesPOC` |
 | App Service Plan | `ASP-aimyaacoub-87dc` |
+
+---
+
+## Part 3 — Agent Chat
+
+Open the SRE Agent in the Azure portal and use the **Chat** pane to interact with it directly.
+
+**Try these prompts:**
+
+| Prompt | What it demonstrates |
+|---|---|
+| *"What are API Response times for all apis last 7 days on ai-myaacoub resource group?"* | Queries Azure Monitor metrics across multiple resources over a time range |
+| *"Plot a pie chart for apps hosted on app services vs container apps vs AKS"* | Uses Resource Graph to inventory compute resources and renders a chart |
+| *"List azure resources sorted by highest price for last 30 days in resource group ai-myaacoub. Plot on bar chart"* | Pulls cost data and visualizes spending per resource |
+| *"Does my API Management instance have any unhealthy backend apps?"* | Checks APIM backend health status in real time |
+| *"What are the apis hosted on apim-poc-my?"* | Lists APIs registered in the APIM instance |
+| *"What is the current health of SalesPOC-API?"* | Real-time health check of a single resource |
+| *"Are there any active incidents?"* | Queries incident state |
+| *"Check the latest deployments across our GitHub repos"* | Uses the GitHub connector to review CI/CD status |
+
+The agent uses its managed identity (`sre-ai-my-identity`) with **Contributor** access to query and act on resources.
 
 ---
 
