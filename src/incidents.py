@@ -1,6 +1,8 @@
 """Incident response plans for Sales POC Azure resources."""
 
+import asyncio
 import logging
+import shlex
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -370,6 +372,52 @@ class IncidentManager:
             incident.actions_taken.append(resolution)
         logger.info("Incident %s resolved: %s", incident_id, resolution)
         return incident
+
+    async def execute_runbook(self, incident_id: str) -> list[dict]:
+        """Execute automated runbook steps for an incident."""
+        incident = self._active_incidents.get(incident_id)
+        if not incident:
+            raise ValueError(f"Incident not found: {incident_id}")
+
+        plan = self._plans.get(incident.plan_name)
+        if not plan:
+            raise ValueError(f"Plan not found: {incident.plan_name}")
+
+        incident.status = IncidentStatus.MITIGATING
+        results = []
+
+        for step in plan.runbook:
+            if not step.automated or not step.command:
+                results.append({"step": step.order, "action": step.action, "status": "manual", "description": step.description})
+                continue
+
+            logger.info("Executing runbook step %d for %s: %s", step.order, incident_id, step.action)
+            try:
+                proc = await asyncio.create_subprocess_exec(
+                    *shlex.split(step.command),
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+                success = proc.returncode == 0
+                output = stdout.decode().strip() if stdout else ""
+                error_output = stderr.decode().strip() if stderr else ""
+                results.append({
+                    "step": step.order, "action": step.action, "status": "success" if success else "failed",
+                    "output": output, "error": error_output,
+                })
+                incident.actions_taken.append(f"Step {step.order} ({step.action}): {'success' if success else 'failed'}")
+                logger.info("Step %d %s: %s", step.order, "succeeded" if success else "failed", output or error_output)
+            except asyncio.TimeoutError:
+                results.append({"step": step.order, "action": step.action, "status": "timeout"})
+                incident.actions_taken.append(f"Step {step.order} ({step.action}): timeout")
+                logger.error("Step %d timed out for %s", step.order, incident_id)
+            except Exception as exc:
+                results.append({"step": step.order, "action": step.action, "status": "error", "error": str(exc)})
+                incident.actions_taken.append(f"Step {step.order} ({step.action}): error - {exc}")
+                logger.error("Step %d failed for %s: %s", step.order, incident_id, exc)
+
+        return results
 
     def get_active_incidents(self) -> list[Incident]:
         return [i for i in self._active_incidents.values() if i.status != IncidentStatus.RESOLVED]

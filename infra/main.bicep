@@ -1,8 +1,8 @@
 @description('Name of the SRE agent')
-param agentName string = 'sre-ai-my'
+param agentName string
 
 @description('Azure region for deployment')
-param location string = 'eastus2'
+param location string
 
 @description('Container image to deploy')
 param containerImage string
@@ -10,6 +10,31 @@ param containerImage string
 @description('Application Insights connection string')
 @secure()
 param appInsightsConnectionString string = ''
+
+@description('Application Insights resource ID')
+param appInsightsResourceId string
+
+@description('Grafana URL for dashboard')
+param grafanaUrl string
+
+@description('Azure Monitor Workspace metrics ingestion endpoint')
+param metricsIngestionEndpoint string
+
+@description('Azure Monitor Workspace query endpoint')
+param metricsQueryEndpoint string
+
+@description('Managed resources — each entry has a provider and path used to build full resource IDs')
+param managedResources array
+
+// --- Built-in Role Definition IDs ---
+var contributorRoleId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+var monitoringContributorRoleId = '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
+
+// --- Managed Resource IDs (built from managedResources param) ---
+var rgId = resourceGroup().id
+var subId = '/subscriptions/${subscription().subscriptionId}'
+var resourceSpecificIds = [for r in managedResources: '${rgId}/providers/${r.provider}/${r.path}']
+var managedResourceIds = concat([subId, rgId], resourceSpecificIds)
 
 // --- Log Analytics Workspace ---
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -44,9 +69,80 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-
   location: location
 }
 
+// --- SRE Agent (Microsoft.App/agents) ---
+resource sreAgent 'Microsoft.App/agents@2025-05-01-preview' = {
+  name: agentName
+  location: location
+  identity: {
+    type: 'SystemAssigned, UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentity.id}': {}
+    }
+  }
+  tags: {
+    'hidden-link: /app-insights-resource-id': appInsightsResourceId
+  }
+  properties: {
+    actionConfiguration: {
+      accessLevel: 'High'
+      identity: managedIdentity.id
+      mode: 'review'
+    }
+    defaultModel: {
+      name: 'Automatic'
+      provider: 'Anthropic'
+    }
+    experimentalSettings: {
+      EnableHttpTriggers: true
+      EnableWorkspaceTools: true
+    }
+    incidentManagementConfiguration: {
+      connectionName: 'azmonitor'
+      type: 'AzMonitor'
+    }
+    knowledgeGraphConfiguration: {
+      identity: managedIdentity.id
+      managedResources: managedResourceIds
+    }
+    logConfiguration: {
+      applicationInsightsConfiguration: {
+        applicationInsightsResourceId: appInsightsResourceId
+      }
+    }
+    dashboardConfiguration: {
+      azureMonitorWorkspaceMetricsIngestionEndpoint: metricsIngestionEndpoint
+      azureMonitorWorkspaceQueryEndpoint: metricsQueryEndpoint
+      grafanaUrl: grafanaUrl
+      identity: managedIdentity.id
+    }
+    monthlyAgentUnitLimit: 50000
+    upgradeChannel: 'Stable'
+  }
+}
+
+// --- Role Assignments: Contributor (privileged) at Resource Group level ---
+resource rgContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, managedIdentity.id, contributorRoleId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', contributorRoleId)
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// --- Role Assignment: Monitoring Contributor at Resource Group level ---
+resource rgMonitoringContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(resourceGroup().id, managedIdentity.id, monitoringContributorRoleId)
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', monitoringContributorRoleId)
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // --- Container App ---
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: agentName
+  name: '${agentName}-app'
   location: location
   identity: {
     type: 'UserAssigned'
@@ -133,6 +229,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
+output sreAgentEndpoint string = sreAgent.properties.agentEndpoint
 output containerAppFqdn string = containerApp.properties.configuration.ingress.fqdn
 output managedIdentityClientId string = managedIdentity.properties.clientId
 output managedIdentityPrincipalId string = managedIdentity.properties.principalId

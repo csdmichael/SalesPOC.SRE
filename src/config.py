@@ -11,11 +11,10 @@ GITHUB_REPOS: list[dict[str, str]] = [
     {"name": "SalesPOC.APIC", "url": "https://github.com/csdmichael/SalesPOC.APIC", "component": "apic"},
     {"name": "SalesPOC.DB", "url": "https://github.com/csdmichael/SalesPOC.DB", "component": "db"},
     {"name": "SalesPOC.AI", "url": "https://github.com/csdmichael/SalesPOC.AI", "component": "ai"},
-    {"name": "SalesPOC.ACA", "url": "https://github.com/csdmichael/SalesPOC.Containerized.API", "component": "ai"},
+    {"name": "SalesPOC.ACA", "url": "https://github.com/csdmichael/SalesPOC.Containerized.API", "component": "aca"},
 ]
 
 MANAGED_RESOURCES: list[dict[str, str]] = [
-    {"provider": "", "path": ""},
     {"provider": "Microsoft.ApiManagement", "path": "service/apim-poc-my"},
     {"provider": "Microsoft.Web", "path": "sites/SalesPOC-API"},
     {"provider": "Microsoft.Sql", "path": "servers/ai-db-poc/databases/ai-db-poc"},
@@ -42,7 +41,7 @@ class AgentSettings(BaseSettings):
     azure_managed_identity: str = "sre-ai-my-bvrrtvop7umme"
 
     # Monitoring
-    app_insights_resource: str = "sre-ai-my-b8bc7f81-ab86-app-insights"
+    app_insights_resource: str = "sre-poc-ai-my-b8bc7f81-ab86-app-insights"
     applicationinsights_connection_string: str = ""
 
     # GitHub

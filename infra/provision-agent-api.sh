@@ -51,28 +51,28 @@ create_task() {
 }
 
 create_task "Health Check All Resources" "*/5 * * * *" \
-  "Check health of all monitored Azure resources every 5 minutes" \
-  "Perform a comprehensive health check on all monitored Azure resources: SQL Database (ai-db-poc), Cosmos DB (cosmos-ai-poc), Storage Account (aistoragemyaacoub), API App Service (SalesPOC-API), APIM (apim-poc-my), AI Foundry (001-ai-poc), Frontend (SalesPOC). Check CPU, memory, availability, error rates, and connection health. Report any anomalies."
+  "Full health check of all monitored Azure resources including SQL DB, Cosmos DB, Storage, API, APIM, AI Foundry, and Frontend" \
+  "Perform a comprehensive health check on all monitored Azure resources in the ai-myaacoub resource group. Check CPU, memory, response times, error rates, and availability for SQL Database (ai-db-poc), Cosmos DB (cosmos-ai-poc), Storage (aistoragemyaacoub), API (SalesPOC-API), APIM (apim-poc-my), AI Foundry (001-ai-poc), and Frontend (SalesPOC). Report any degraded or unhealthy resources with severity levels."
 
 create_task "Subagent Analysis" "*/15 * * * *" \
-  "Run subagent health analysis every 15 minutes" \
-  "Execute analysis across all subagent domains: Database (SQL + Cosmos performance), API Gateway (APIM metrics), AI Services (Foundry response times and errors), Frontend (HTTP errors, latency), Security (unauthorized requests, certificate expiry), Cost (spending trends, budget alerts). Summarize findings and flag issues."
+  "Run all 6 specialized subagent analyses: Database (SQL DB + Cosmos DB), API Gateway (API + APIM), AI Services (AI Foundry), Frontend (App Service + Storage), Security (all resources + GitHub), and Cost (utilization + right-sizing)" \
+  "Run a comprehensive analysis using all specialized subagents. Database subagent: check SQL DTU usage, deadlocks, connection failures, and Cosmos DB RU consumption, throttling, replication lag. API Gateway subagent: check API response times, 5xx error rates, APIM capacity and backend duration. AI Services subagent: check AI Foundry error rates, latency, token usage. Frontend subagent: check App Service HTTP errors, response times, Storage availability. Security subagent: check for unauthorized access spikes, connection abuse, scanning patterns across all resources. Cost subagent: identify under-utilized resources and right-sizing opportunities."
 
 create_task "Security Scan" "*/15 * * * *" \
-  "Scan for security anomalies every 15 minutes" \
-  "Scan all monitored resources for security issues: check APIM for unauthorized request spikes, review SQL firewall rules, verify storage account access policies, check for exposed secrets or misconfigured RBAC, review network security group rules. Alert on any anomalies."
+  "Security-focused analysis across all monitored resources and GitHub repositories. Detects unauthorized access spikes, connection abuse patterns, and potential scanning activity." \
+  "Perform a security-focused scan across all resources in the ai-myaacoub resource group. Check APIM for unauthorized request spikes (>50 in 5 min), SQL DB for elevated connection failures that may indicate brute force attempts, API for high 4xx rates that suggest scanning/enumeration, and GitHub repositories for access anomalies. Report any security concerns with severity levels and recommended mitigations."
 
 create_task "GitHub Repository Check" "0 * * * *" \
-  "Check GitHub repositories for issues every hour" \
-  "Check all monitored GitHub repositories (SalesPOC.UI, SalesPOC.API, SalesPOC.MCP, SalesPOC.APIM, SalesPOC.APIC, SalesPOC.DB, SalesPOC.AI) for: open pull requests needing review, failing CI/CD pipelines, open issues with high priority, recent commits affecting monitored resources, dependency security alerts."
+  "Verify connectivity and status of all 8 connected GitHub repositories: SalesPOC.UI, SalesPOC.API, SalesPOC.MCP, SalesPOC.APIM, SalesPOC.APIC, SalesPOC.DB, SalesPOC.AI, SalesPOC.Containerized.API" \
+  "Check the status and connectivity of all 8 GitHub repositories under the csdmichael organization: SalesPOC.UI (Frontend), SalesPOC.API (API), SalesPOC.MCP (MCP Server), SalesPOC.APIM (API Management), SalesPOC.APIC (API Center), SalesPOC.DB (Database), SalesPOC.AI (AI), SalesPOC.Containerized.API (ACA). Verify each repo is accessible, check for recent commits, open pull requests, and any failed CI/CD workflow runs. Report any connectivity issues or stale repositories."
 
 create_task "Cost Analysis" "0 */6 * * *" \
-  "Analyze Azure spending every 6 hours" \
-  "Analyze Azure resource costs for resource group ai-myaacoub: review current spending vs budget, identify cost anomalies or unexpected spikes, check for idle or underutilized resources, recommend optimization opportunities, project month-end spend."
+  "Cost optimization analysis across all monitored Azure resources. Identifies under-utilized resources and provides right-sizing recommendations." \
+  "Perform a cost optimization analysis across all resources in the ai-myaacoub resource group. Check for under-utilized resources: SQL DB with CPU <10%, Cosmos DB with low RU usage (<100 RU/s), API App Service with low memory working set (<50MB), and AI Foundry token consumption patterns. Provide specific right-sizing recommendations: consider downgrading SQL service tier, reducing Cosmos DB provisioned RUs or switching to serverless, scaling down App Service plan. Calculate estimated monthly savings for each recommendation."
 
 create_task "Daily SRE Report" "0 8 * * *" \
-  "Generate daily SRE report at 8 AM UTC" \
-  "Generate a comprehensive daily SRE report covering the last 24 hours: resource health summary, incident summary (created, resolved, open), key metrics (availability, error rates, latency p95), top alerts fired, GitHub activity summary, cost trend, and recommended actions for the day."
+  "Comprehensive daily SRE summary report covering all monitored resources, incidents, SLA compliance, and operational recommendations." \
+  "Generate a comprehensive daily SRE report for the Sales POC infrastructure in the ai-myaacoub resource group. Include: 1) Executive summary of overall system health. 2) Resource-by-resource status for SQL DB (ai-db-poc), Cosmos DB (cosmos-ai-poc), Storage (aistoragemyaacoub), API (SalesPOC-API), APIM (apim-poc-my), AI Foundry (001-ai-poc), Frontend (SalesPOC). 3) SLA compliance against targets: SQL 99.99%, Cosmos 99.999%, Storage 99.9%, API 99.95%, APIM 99.95%, AI Foundry 99.9%, Frontend 99.95%. 4) Incident summary: total incidents, severity breakdown, MTTR. 5) Key metrics trends over the past 24 hours. 6) Cost optimization opportunities. 7) Security observations. 8) Actionable recommendations for the operations team."
 
 echo ""
 
@@ -328,13 +328,13 @@ create_repo() {
   echo "  [ok] $name"
 }
 
-create_repo "SalesPOC.UI"   "https://github.com/csdmichael/SalesPOC.UI"   "Frontend Angular application"
-create_repo "SalesPOC.API"  "https://github.com/csdmichael/SalesPOC.API"  "Backend .NET API"
-create_repo "SalesPOC.MCP"  "https://github.com/csdmichael/SalesPOC.MCP"  "Model Context Protocol server"
-create_repo "SalesPOC.APIM" "https://github.com/csdmichael/SalesPOC.APIM" "API Management configuration"
-create_repo "SalesPOC.APIC" "https://github.com/csdmichael/SalesPOC.APIC" "API Center configuration"
-create_repo "SalesPOC.DB"   "https://github.com/csdmichael/SalesPOC.DB"   "Database migrations and scripts"
-create_repo "SalesPOC.AI"   "https://github.com/csdmichael/SalesPOC.AI"   "AI Foundry configuration"
+create_repo "Sales POC - UI"      "https://github.com/csdmichael/SalesPOC.UI"               "Frontend Angular application"
+create_repo "Sales POC - API"     "https://github.com/csdmichael/SalesPOC.API"              "Backend .NET API"
+create_repo "Sales POC - MCP"     "https://github.com/csdmichael/SalesPOC.MCP"              "Model Context Protocol server"
+create_repo "Sales POC - APIM"    "https://github.com/csdmichael/SalesPOC.APIM"             "API Management configuration"
+create_repo "Sales POC - DB"      "https://github.com/csdmichael/SalesPOC.DB"               "Database migrations and scripts"
+create_repo "Sales POC - AI Foundry" "https://github.com/csdmichael/SalesPOC.AI"            "AI Foundry configuration"
+create_repo "Sales POC - ACA"     "https://github.com/csdmichael/SalesPOC.Containerized.API" "Containerized API (Azure Container Apps)"
 
 echo ""
 echo "=== Summary ==="

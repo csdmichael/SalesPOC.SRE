@@ -197,10 +197,20 @@ class SREAgent:
                 },
             )
             logger.info("Incident created from alert: %s -> %s", alert_rule, incident.id)
+
+            # Execute automated runbook if plan has auto-remediation enabled
+            plan = self.incident_mgr.get_plan(plan_name)
+            runbook_results = None
+            if plan and plan.auto_remediate:
+                logger.info("Auto-remediating incident %s using plan '%s'", incident.id, plan_name)
+                runbook_results = await self.incident_mgr.execute_runbook(incident.id)
+
             return {
                 "status": "incident_created",
                 "incident_id": incident.id,
                 "plan_name": plan_name,
+                "auto_remediated": plan.auto_remediate if plan else False,
+                "runbook_results": runbook_results,
             }
 
         logger.warning("No matching plan for alert: %s", alert_rule)
