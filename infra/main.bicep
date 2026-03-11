@@ -1,8 +1,8 @@
 @description('Name of the SRE agent')
-param agentName string
+param agentName string = 'sre-ai-my'
 
 @description('Azure region for deployment')
-param location string
+param location string = 'eastus2'
 
 @description('Container image to deploy')
 param containerImage string
@@ -12,19 +12,28 @@ param containerImage string
 param appInsightsConnectionString string = ''
 
 @description('Application Insights resource ID')
-param appInsightsResourceId string
+param appInsightsResourceId string = '/subscriptions/${subscription().subscriptionId}/resourceGroups/${resourceGroup().name}/providers/Microsoft.Insights/components/sre-poc-ai-my-b8bc7f81-ab86-app-insights'
 
 @description('Grafana URL for dashboard')
-param grafanaUrl string
+param grafanaUrl string = 'https://grafana-20251216100414-dud6eccwdyh7b3an.wus.grafana.azure.com'
 
 @description('Azure Monitor Workspace metrics ingestion endpoint')
-param metricsIngestionEndpoint string
+param metricsIngestionEndpoint string = 'https://defaultazuremonitorworkspace-wus-jfog.westus-1.metrics.ingest.monitor.azure.com/dataCollectionRules/dcr-1ab9a75fbec94d5d9f25b09cf0e224f0/streams/Microsoft-PrometheusMetrics/api/v1/write?api-version=2023-04-24'
 
 @description('Azure Monitor Workspace query endpoint')
-param metricsQueryEndpoint string
+param metricsQueryEndpoint string = 'https://defaultazuremonitorworkspace-wus-dwdtc7bqb9gzc4ft.westus.prometheus.monitor.azure.com'
 
-@description('Managed resources — each entry has a provider and path used to build full resource IDs')
-param managedResources array
+@description('Managed resources — each entry has a provider and path used to build full resource IDs. Populated from config.py via PATCH post-deploy; defaults here ensure valid initial deployment.')
+param managedResources array = [
+  { provider: 'Microsoft.ApiManagement', path: 'service/apim-poc-my' }
+  { provider: 'Microsoft.Web', path: 'sites/SalesPOC-API' }
+  { provider: 'Microsoft.Sql', path: 'servers/ai-db-poc/databases/ai-db-poc' }
+  { provider: 'Microsoft.DocumentDB', path: 'databaseAccounts/cosmos-ai-poc' }
+  { provider: 'Microsoft.Storage', path: 'storageAccounts/aistoragemyaacoub' }
+  { provider: 'Microsoft.Web', path: 'sites/SalesPOC' }
+  { provider: 'Microsoft.Web', path: 'serverfarms/ASP-aimyaacoub-87dc' }
+  { provider: 'Microsoft.CognitiveServices', path: 'accounts/001-ai-poc' }
+]
 
 // --- Built-in Role Definition IDs ---
 var contributorRoleId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
