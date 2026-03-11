@@ -100,6 +100,7 @@ jobs:
           subscriptionId: ${{ env.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
           template: ./infra/main.bicep
+          failOnStdErr: false
           parameters: >
             agentName=${{ env.AGENT_NAME }}
             location=${{ env.AZURE_REGION }}
