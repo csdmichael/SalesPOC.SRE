@@ -23,6 +23,9 @@ param metricsIngestionEndpoint string = 'https://defaultazuremonitorworkspace-wu
 @description('Azure Monitor Workspace query endpoint')
 param metricsQueryEndpoint string = 'https://defaultazuremonitorworkspace-wus-dwdtc7bqb9gzc4ft.westus.prometheus.monitor.azure.com'
 
+@description('Deploy role assignments (requires Owner/User Access Admin on the RG). Set to false when the deploying principal lacks roleAssignments/write.')
+param deployRoleAssignments bool = false
+
 @description('Managed resources — each entry has a provider and path used to build full resource IDs. Populated from config.py via PATCH post-deploy; defaults here ensure valid initial deployment.')
 param managedResources array = [
   { provider: 'Microsoft.ApiManagement', path: 'service/apim-poc-my' }
@@ -129,8 +132,8 @@ resource sreAgent 'Microsoft.App/agents@2025-05-01-preview' = {
   }
 }
 
-// --- Role Assignments: Contributor (privileged) at Resource Group level ---
-resource rgContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+// --- Role Assignments (skipped when deployRoleAssignments is false) ---
+resource rgContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployRoleAssignments) {
   name: guid(resourceGroup().id, managedIdentity.id, contributorRoleId)
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', contributorRoleId)
@@ -139,8 +142,7 @@ resource rgContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' 
   }
 }
 
-// --- Role Assignment: Monitoring Contributor at Resource Group level ---
-resource rgMonitoringContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource rgMonitoringContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployRoleAssignments) {
   name: guid(resourceGroup().id, managedIdentity.id, monitoringContributorRoleId)
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', monitoringContributorRoleId)
