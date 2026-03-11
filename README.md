@@ -23,9 +23,12 @@ Open the SRE Agent in the Azure portal and use the **Chat** pane to interact wit
 
 | Prompt | What it demonstrates |
 |---|---|
-| *"What Azure resources are you monitoring?"* | Shows the agent's awareness of its managed resources |
+| *"What are API Response times for all apis last 7 days on ai-myaacoub resource group?"* | Queries Azure Monitor metrics across multiple resources over a time range |
+| *"Plot a pie chart for apps hosted on app services vs container apps vs AKS"* | Uses Resource Graph to inventory compute resources and renders a chart |
+| *"List azure resources sorted by highest price for last 30 days in resource group ai-myaacoub. Plot on bar chart"* | Pulls cost data and visualizes spending per resource |
+| *"Does my API Management instance have any unhealthy backend apps?"* | Checks APIM backend health status in real time |
+| *"What are the apis hosted on apim-poc-my?"* | Lists APIs registered in the APIM instance |
 | *"What is the current health of SalesPOC-API?"* | Real-time health check of a single resource |
-| *"Show me the CPU and memory metrics for the last hour"* | Pulls live Azure Monitor metrics |
 | *"Are there any active incidents?"* | Queries incident state |
 | *"Check the latest deployments across our GitHub repos"* | Uses the GitHub connector to review CI/CD status |
 
