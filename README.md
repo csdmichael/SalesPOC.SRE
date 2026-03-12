@@ -41,7 +41,6 @@ Navigate to the **Connectors** tab in the SRE Agent portal. Three connectors pro
 | SalesPOC.DB | https://github.com/csdmichael/SalesPOC.DB |
 | SalesPOC.AI | https://github.com/csdmichael/SalesPOC.AI |
 | SalesPOC.Containerized.API | https://github.com/csdmichael/SalesPOC.Containerized.API |
-| SalesPOC.SRE | https://github.com/csdmichael/SalesPOC.SRE |
 
 ---
 
