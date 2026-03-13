@@ -45,7 +45,7 @@ class AgentSettings(BaseSettings):
     applicationinsights_connection_string: str = ""
 
     # GitHub
-    github_token: str = "***REMOVED***"
+    github_token: str = ""
     github_org: str = "csdmichael"
 
     # Azure resource names
