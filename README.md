@@ -553,3 +553,9 @@ All rules evaluate every 5 minutes with a 5-minute window. Action group `sre-ai-
 | **SRE Agent Reader** (or higher) | `sre-ai-my` agent | Users | Access the SRE agent portal |
 | **Monitoring Reader** | `ai-myaacoub` RG | `sre-ai-my-identity` MI | Query Azure Monitor metrics |
 | **Contributor** | `ai-myaacoub` RG | GitHub Actions SP | Deploy infrastructure |
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
