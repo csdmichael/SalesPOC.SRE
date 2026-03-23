@@ -23,6 +23,15 @@ MANAGED_RESOURCES: list[dict[str, str]] = [
     {"provider": "Microsoft.Web", "path": "sites/SalesPOC"},
     {"provider": "Microsoft.Web", "path": "serverfarms/ASP-aimyaacoub-87dc"},
     {"provider": "Microsoft.CognitiveServices", "path": "accounts/001-ai-poc"},
+    # Network resources
+    {"provider": "Microsoft.Network", "path": "virtualNetworks/mymsx-vnet"},
+    {"provider": "Microsoft.Network", "path": "virtualNetworks/vnet-salespoc-westus2"},
+    {"provider": "Microsoft.Network", "path": "networkSecurityGroups/mymsx-vnet-app-subnet-nsg-westus2"},
+    {"provider": "Microsoft.Network", "path": "networkSecurityGroups/vnet-salespoc-westus2-snet-appservice-nsg-westus2"},
+    {"provider": "Microsoft.Network", "path": "networkSecurityGroups/vnet-salespoc-westus2-snet-private-endpoints-nsg-westus2"},
+    {"provider": "Microsoft.Network", "path": "privateEndpoints/pe-blob-westus2"},
+    {"provider": "Microsoft.Network", "path": "privateEndpoints/pe-cosmos-westus2"},
+    {"provider": "Microsoft.Network", "path": "privateEndpoints/pe-sql-westus2"},
 ]
 
 
@@ -60,6 +69,15 @@ class AgentSettings(BaseSettings):
     ai_foundry_name: str = "001-ai-poc"
     frontend_app_service_name: str = "SalesPOC"
     app_service_plan_name: str = "ASP-aimyaacoub-87dc"
+
+    # Network resources
+    vnet_names: list[str] = ["mymsx-vnet", "vnet-salespoc-westus2"]
+    nsg_names: list[str] = [
+        "mymsx-vnet-app-subnet-nsg-westus2",
+        "vnet-salespoc-westus2-snet-appservice-nsg-westus2",
+        "vnet-salespoc-westus2-snet-private-endpoints-nsg-westus2",
+    ]
+    private_endpoint_names: list[str] = ["pe-blob-westus2", "pe-cosmos-westus2", "pe-sql-westus2"]
 
     class Config:
         env_file = ".env"

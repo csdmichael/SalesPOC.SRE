@@ -85,6 +85,30 @@ FRONTEND_METRICS = [
     MetricDefinition("RequestCount", "Request Count", "count", "Total requests served"),
 ]
 
+# ──────────────────── VNet Metrics ────────────────────
+VNET_METRICS = [
+    MetricDefinition("IfUnderDDoSAttack", "DDoS Attack", "bool", "Whether the VNet is under DDoS attack", 1, 1),
+    MetricDefinition("BytesDroppedDDoS", "DDoS Bytes Dropped", "bytes", "Bytes dropped by DDoS protection"),
+    MetricDefinition("PacketsInDDoS", "DDoS Packets In", "count", "Inbound packets during DDoS"),
+    MetricDefinition("PacketsDroppedDDoS", "DDoS Packets Dropped", "count", "Packets dropped by DDoS protection"),
+    MetricDefinition("BytesInDDoS", "DDoS Bytes In", "bytes", "Inbound bytes during DDoS"),
+    MetricDefinition("BytesForwardedDDoS", "DDoS Bytes Forwarded", "bytes", "Bytes forwarded after DDoS mitigation"),
+]
+
+# ──────────────────── NSG Metrics ────────────────────
+NSG_METRICS = [
+    MetricDefinition("AllowedFlows", "Allowed Flows", "count", "Number of allowed network flows"),
+    MetricDefinition("DeniedFlows", "Denied Flows", "count", "Number of denied network flows", 50, 200),
+    MetricDefinition("AllowedFlowsPerRule", "Allowed Flows Per Rule", "count", "Allowed flows broken down by rule"),
+    MetricDefinition("DeniedFlowsPerRule", "Denied Flows Per Rule", "count", "Denied flows broken down by rule"),
+]
+
+# ──────────────────── Private Endpoint Metrics ────────────────────
+PRIVATE_ENDPOINT_METRICS = [
+    MetricDefinition("PEBytesIn", "Bytes In", "bytes", "Bytes received by the private endpoint"),
+    MetricDefinition("PEBytesOut", "Bytes Out", "bytes", "Bytes sent from the private endpoint"),
+]
+
 # ──────────────────── SLA Targets ────────────────────
 SLA_TARGETS = {
     "sql_db": {"availability": 99.99, "response_time_ms": 100},
@@ -94,4 +118,7 @@ SLA_TARGETS = {
     "apim": {"availability": 99.95, "response_time_ms": 1000},
     "foundry": {"availability": 99.9, "latency_ms": 3000},
     "frontend": {"availability": 99.95, "response_time_ms": 200},
+    "vnet": {"availability": 99.99},
+    "nsg": {"availability": 99.99},
+    "private_endpoint": {"availability": 99.99},
 }

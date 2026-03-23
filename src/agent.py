@@ -96,6 +96,12 @@ class SREAgent:
             frequency=TaskFrequency.EVERY_DAY,
             handler=self._task_daily_report,
         ))
+        self.scheduler.register(ScheduledTask(
+            name="network_health_check",
+            description="Check health of VNets, NSGs, and Private Endpoints",
+            frequency=TaskFrequency.EVERY_5_MINUTES,
+            handler=self._task_network_health_check,
+        ))
 
     # ── Scheduled task handlers ──
 
@@ -120,7 +126,31 @@ class SREAgent:
         dashboard = await self.monitor.async_get_dashboard_summary()
         incidents = self.incident_mgr.get_summary()
         github = await asyncio.to_thread(self.github.check_connectivity)
-        return {"dashboard": dashboard, "incidents": incidents, "github": github}
+        network = await self._task_network_health_check()
+        return {"dashboard": dashboard, "incidents": incidents, "github": github, "network": network}
+
+    async def _task_network_health_check(self) -> dict:
+        """Check health of VNets, NSGs, and Private Endpoints."""
+        from src.monitors import NSG_MONITORED_RESOURCES, PE_MONITORED_RESOURCES, ResourceType
+        results = {}
+        # VNet health
+        vnet_health = await self.monitor.async_query_resource(ResourceType.VNET)
+        results["vnets"] = {
+            "status": vnet_health.status.value,
+            "message": vnet_health.message,
+            "metrics": {m.name: m.value for m in vnet_health.metrics},
+        }
+        # NSG health (resource listing)
+        results["nsgs"] = {
+            name: {"resource_id": cfg["resource_id"], "display_name": cfg["display_name"]}
+            for name, cfg in NSG_MONITORED_RESOURCES.items()
+        }
+        # Private Endpoint health (resource listing)
+        results["private_endpoints"] = {
+            name: {"resource_id": cfg["resource_id"], "display_name": cfg["display_name"]}
+            for name, cfg in PE_MONITORED_RESOURCES.items()
+        }
+        return results
 
     # ── Public API ──
 
@@ -241,5 +271,12 @@ class SREAgent:
             "sre-foundry-high-error-rate": "foundry_high_error_rate",
             "sre-foundry-high-latency": "foundry_high_latency",
             "sre-frontend-http-errors": "frontend_http_errors",
+            # Network alerts
+            "sre-vnet-ddos-attack": "vnet_ddos_attack",
+            "sre-vnet-config-change": "vnet_config_change",
+            "sre-nsg-denied-flows-spike": "nsg_denied_flows_spike",
+            "sre-nsg-rule-change": "nsg_rule_change",
+            "sre-pe-connection-failed": "pe_connection_failed",
+            "sre-pe-data-drop": "pe_data_drop",
         }
         return mapping.get(alert_rule_name)
