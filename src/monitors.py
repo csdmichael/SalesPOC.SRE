@@ -22,6 +22,9 @@ class ResourceType(str, Enum):
     APIM = "apim"
     FOUNDRY = "foundry"
     FRONTEND = "frontend"
+    VNET = "vnet"
+    NSG = "nsg"
+    PRIVATE_ENDPOINT = "private_endpoint"
 
 
 class HealthStatus(str, Enum):
@@ -129,6 +132,42 @@ MONITORED_RESOURCES: dict[ResourceType, dict] = {
             {"name": "AverageResponseTime", "aggregation": "Average", "threshold_warn": 1.0, "threshold_crit": 3.0},
         ],
     },
+}
+
+# ── Network resource monitors (one entry per named resource) ──
+# VNets – limited platform metrics; rely on activity-log / resource-health alerts
+for _vnet_name in settings.vnet_names:
+    _key = f"vnet_{_vnet_name}"
+    MONITORED_RESOURCES[ResourceType.VNET] = MONITORED_RESOURCES.get(ResourceType.VNET) or {
+        "resource_id": settings.resource_id("Microsoft.Network", f"virtualNetworks/{settings.vnet_names[0]}"),
+        "display_name": f"VNet – {settings.vnet_names[0]}",
+        "metrics": [
+            {"name": "IfUnderDDoSAttack", "aggregation": "Maximum", "threshold_warn": 1, "threshold_crit": 1},
+            {"name": "BytesDroppedDDoS", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
+            {"name": "PacketsInDDoS", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
+            {"name": "PacketsDroppedDDoS", "aggregation": "Total", "threshold_warn": None, "threshold_crit": None},
+        ],
+    }
+
+# NSGs – flow-log and rule-hit metrics
+for _nsg_name in settings.nsg_names:
+    pass  # NSGs have no platform metrics; monitored via activity-log alerts
+
+NSG_MONITORED_RESOURCES = {
+    nsg: {
+        "resource_id": settings.resource_id("Microsoft.Network", f"networkSecurityGroups/{nsg}"),
+        "display_name": f"NSG – {nsg}",
+    }
+    for nsg in settings.nsg_names
+}
+
+# Private Endpoints – connectivity status metric
+PE_MONITORED_RESOURCES = {
+    pe: {
+        "resource_id": settings.resource_id("Microsoft.Network", f"privateEndpoints/{pe}"),
+        "display_name": f"Private Endpoint – {pe}",
+    }
+    for pe in settings.private_endpoint_names
 }
 
 

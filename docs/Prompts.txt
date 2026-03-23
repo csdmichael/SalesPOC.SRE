@@ -1,0 +1,11 @@
+Add the following network resources to sre agent managed resources: 
+1) vnets (mymsx-vnet, vnet-salespoc-westus2)
+2) NSGs (mymsx-vnet-app-subnet-nsg-westus2, vnet-salespoc-westus2-snet-appservice-nsg-westus2, vnet-salespoc-westus2-snet-private-endpoints-nsg-westus2) 
+3) Private Endpoints (pe-blob-westus2, pe-cosmos-westus2, pe-sql-westus2)
+
+Add relevant Azure Monitor Alerts for vnets, NSGs, Private Endpoints.
+Make action groups for these alerts to trigger webhooks / http triggers in SRE agent as well as send email to myaacoub@microsoft.com 
+Add Incident Response plans for vnets, NSGs, Private Endpoints
+Include network resources in scheduled tasks for Agent Canvas for daily report of infrastructure health
+Update readMe file to reflect new changes
+

@@ -37,6 +37,18 @@ param frontendAppServiceName string = 'SalesPOC'
 @description('App Service Plan name')
 param appServicePlanName string = 'ASP-aimyaacoub-87dc'
 
+@description('VNet names')
+param vnetNames array = ['mymsx-vnet', 'vnet-salespoc-westus2']
+
+@description('NSG names')
+param nsgNames array = ['mymsx-vnet-app-subnet-nsg-westus2', 'vnet-salespoc-westus2-snet-appservice-nsg-westus2', 'vnet-salespoc-westus2-snet-private-endpoints-nsg-westus2']
+
+@description('Private Endpoint names')
+param privateEndpointNames array = ['pe-blob-westus2', 'pe-cosmos-westus2', 'pe-sql-westus2']
+
+@description('Email address for alert notifications')
+param alertEmailAddress string = 'myaacoub@microsoft.com'
+
 var rgId = resourceGroup().id
 
 // ─── Monitored Resource IDs ─────────────────────────────
@@ -49,6 +61,16 @@ var foundryId = '${rgId}/providers/Microsoft.CognitiveServices/accounts/${aiFoun
 var frontendId = '${rgId}/providers/Microsoft.Web/sites/${frontendAppServiceName}'
 var appServicePlanId = '${rgId}/providers/Microsoft.Web/serverfarms/${appServicePlanName}'
 
+// ─── Network Resource IDs ────────────────────────────
+var vnet0Id = '${rgId}/providers/Microsoft.Network/virtualNetworks/${vnetNames[0]}'
+var vnet1Id = '${rgId}/providers/Microsoft.Network/virtualNetworks/${vnetNames[1]}'
+var nsg0Id = '${rgId}/providers/Microsoft.Network/networkSecurityGroups/${nsgNames[0]}'
+var nsg1Id = '${rgId}/providers/Microsoft.Network/networkSecurityGroups/${nsgNames[1]}'
+var nsg2Id = '${rgId}/providers/Microsoft.Network/networkSecurityGroups/${nsgNames[2]}'
+var pe0Id = '${rgId}/providers/Microsoft.Network/privateEndpoints/${privateEndpointNames[0]}'
+var pe1Id = '${rgId}/providers/Microsoft.Network/privateEndpoints/${privateEndpointNames[1]}'
+var pe2Id = '${rgId}/providers/Microsoft.Network/privateEndpoints/${privateEndpointNames[2]}'
+
 // ─── Action Group (routes alerts to SRE agent webhook) ──
 resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
   name: actionGroupName
@@ -60,6 +82,13 @@ resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
       {
         name: 'SREAgentWebhook'
         serviceUri: webhookUrl
+        useCommonAlertSchema: true
+      }
+    ]
+    emailReceivers: [
+      {
+        name: 'SREAlertEmail'
+        emailAddress: alertEmailAddress
         useCommonAlertSchema: true
       }
     ]
@@ -99,6 +128,15 @@ var alertConfigs = [
 
   // Frontend (App Service)
   { name: 'sre-frontend-http-errors', desc: 'Frontend HTTP 5xx errors > 20 in 5min', sev: 2, target: frontendId, metric: 'Http5xx', op: 'GreaterThan', thresh: 20, agg: 'Total', plan: 'frontend_http_errors' }
+
+  // VNets
+  { name: 'sre-vnet0-ddos-attack', desc: 'VNet ${vnetNames[0]} under DDoS attack', sev: 1, target: vnet0Id, metric: 'IfUnderDDoSAttack', op: 'GreaterThanOrEqual', thresh: 1, agg: 'Maximum', plan: 'vnet_ddos_attack' }
+  { name: 'sre-vnet1-ddos-attack', desc: 'VNet ${vnetNames[1]} under DDoS attack', sev: 1, target: vnet1Id, metric: 'IfUnderDDoSAttack', op: 'GreaterThanOrEqual', thresh: 1, agg: 'Maximum', plan: 'vnet_ddos_attack' }
+
+  // Private Endpoints
+  { name: 'sre-pe-blob-bytes-drop', desc: 'PE ${privateEndpointNames[0]} data throughput dropped', sev: 2, target: pe0Id, metric: 'PEBytesIn', op: 'LessThanOrEqual', thresh: 0, agg: 'Total', plan: 'pe_data_drop', evalFreq: 'PT5M', winSize: 'PT15M' }
+  { name: 'sre-pe-cosmos-bytes-drop', desc: 'PE ${privateEndpointNames[1]} data throughput dropped', sev: 2, target: pe1Id, metric: 'PEBytesIn', op: 'LessThanOrEqual', thresh: 0, agg: 'Total', plan: 'pe_data_drop', evalFreq: 'PT5M', winSize: 'PT15M' }
+  { name: 'sre-pe-sql-bytes-drop', desc: 'PE ${privateEndpointNames[2]} data throughput dropped', sev: 2, target: pe2Id, metric: 'PEBytesIn', op: 'LessThanOrEqual', thresh: 0, agg: 'Total', plan: 'pe_data_drop', evalFreq: 'PT5M', winSize: 'PT15M' }
 ]
 
 // ─── Metric Alert Rules ─────────────────────────────────
@@ -136,5 +174,51 @@ resource metricAlerts 'Microsoft.Insights/metricAlerts@2018-03-01' = [for config
   }
 }]
 
+// ─── Activity Log Alerts (VNet & NSG config changes) ────
+resource vnetConfigChangeAlert 'Microsoft.Insights/activityLogAlerts@2020-10-01' = {
+  name: 'sre-vnet-config-change'
+  location: 'Global'
+  properties: {
+    description: 'VNet configuration was modified'
+    enabled: true
+    scopes: [resourceGroup().id]
+    condition: {
+      allOf: [
+        { field: 'category', equals: 'Administrative' }
+        { field: 'resourceType', equals: 'Microsoft.Network/virtualNetworks' }
+        { field: 'operationName', equals: 'Microsoft.Network/virtualNetworks/write' }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        { actionGroupId: actionGroup.id, webhookProperties: { planName: 'vnet_config_change' } }
+      ]
+    }
+  }
+}
+
+resource nsgRuleChangeAlert 'Microsoft.Insights/activityLogAlerts@2020-10-01' = {
+  name: 'sre-nsg-rule-change'
+  location: 'Global'
+  properties: {
+    description: 'NSG security rules were modified'
+    enabled: true
+    scopes: [resourceGroup().id]
+    condition: {
+      allOf: [
+        { field: 'category', equals: 'Administrative' }
+        { field: 'resourceType', equals: 'Microsoft.Network/networkSecurityGroups' }
+        { field: 'operationName', equals: 'Microsoft.Network/networkSecurityGroups/write' }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        { actionGroupId: actionGroup.id, webhookProperties: { planName: 'nsg_rule_change' } }
+      ]
+    }
+  }
+}
+
 output actionGroupId string = actionGroup.id
 output alertRuleCount int = length(alertConfigs)
+output activityLogAlertCount int = 2

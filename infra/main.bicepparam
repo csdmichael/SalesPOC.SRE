@@ -18,4 +18,13 @@ param managedResources = [
   { provider: 'Microsoft.Web', path: 'sites/SalesPOC' }
   { provider: 'Microsoft.Web', path: 'serverfarms/ASP-aimyaacoub-87dc' }
   { provider: 'Microsoft.CognitiveServices', path: 'accounts/001-ai-poc' }
+  // Network resources
+  { provider: 'Microsoft.Network', path: 'virtualNetworks/mymsx-vnet' }
+  { provider: 'Microsoft.Network', path: 'virtualNetworks/vnet-salespoc-westus2' }
+  { provider: 'Microsoft.Network', path: 'networkSecurityGroups/mymsx-vnet-app-subnet-nsg-westus2' }
+  { provider: 'Microsoft.Network', path: 'networkSecurityGroups/vnet-salespoc-westus2-snet-appservice-nsg-westus2' }
+  { provider: 'Microsoft.Network', path: 'networkSecurityGroups/vnet-salespoc-westus2-snet-private-endpoints-nsg-westus2' }
+  { provider: 'Microsoft.Network', path: 'privateEndpoints/pe-blob-westus2' }
+  { provider: 'Microsoft.Network', path: 'privateEndpoints/pe-cosmos-westus2' }
+  { provider: 'Microsoft.Network', path: 'privateEndpoints/pe-sql-westus2' }
 ]

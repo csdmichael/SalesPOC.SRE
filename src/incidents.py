@@ -316,6 +316,99 @@ INCIDENT_PLANS: list[IncidentPlan] = [
             RunbookStep(4, "Check deployments", "Review recent deployments for regressions"),
         ],
     ),
+
+    # ─── VNets ───
+    IncidentPlan(
+        name="vnet_ddos_attack",
+        resource_type="vnet",
+        trigger_condition="IfUnderDDoSAttack == 1",
+        severity=Severity.SEV1,
+        description="Virtual Network is under DDoS attack",
+        runbook=[
+            RunbookStep(1, "Verify DDoS alert", "Confirm DDoS Protection status and attack type", automated=True,
+                        command=f"az network vnet show --name mymsx-vnet --resource-group {settings.azure_resource_group} --query '{{enableDdosProtection:enableDdosProtection,provisioningState:provisioningState}}'"),
+            RunbookStep(2, "Check attack metrics", "Review DDoS bytes/packets dropped and forwarded"),
+            RunbookStep(3, "Enable DDoS Protection", "Enable Azure DDoS Protection Standard if not already active"),
+            RunbookStep(4, "Review NSG rules", "Tighten NSG inbound rules to block known attack sources"),
+            RunbookStep(5, "Notify security team", "Escalate to security team with attack details"),
+        ],
+    ),
+    IncidentPlan(
+        name="vnet_config_change",
+        resource_type="vnet",
+        trigger_condition="Activity Log: VNet write/delete operation",
+        severity=Severity.SEV3,
+        description="Virtual Network configuration changed unexpectedly",
+        runbook=[
+            RunbookStep(1, "Review activity log", "Identify who made the change and what was modified", automated=True,
+                        command=f"az monitor activity-log list --resource-group {settings.azure_resource_group} --offset 1h --query \"[?contains(resourceId,'virtualNetworks')]\""),
+            RunbookStep(2, "Validate connectivity", "Verify all subnets and peerings are still functional"),
+            RunbookStep(3, "Check service health", "Ensure App Services and Private Endpoints are still reachable"),
+            RunbookStep(4, "Revert if unauthorized", "Revert changes via ARM template if the change was unplanned"),
+        ],
+    ),
+
+    # ─── NSGs ───
+    IncidentPlan(
+        name="nsg_denied_flows_spike",
+        resource_type="nsg",
+        trigger_condition="DeniedFlows spike > baseline",
+        severity=Severity.SEV2,
+        description="NSG denied flows spike – potential misconfiguration or attack",
+        runbook=[
+            RunbookStep(1, "Check NSG flow logs", "Analyze NSG flow logs for denied traffic patterns", automated=True,
+                        command=f"az network nsg show --name mymsx-vnet-app-subnet-nsg-westus2 --resource-group {settings.azure_resource_group} --query '{{securityRules:securityRules[].{{name:name,access:access,direction:direction,priority:priority}}}}'"),
+            RunbookStep(2, "Identify source IPs", "Determine if denied traffic is from legitimate or malicious sources"),
+            RunbookStep(3, "Review NSG rules", "Check if recent rule changes are blocking legitimate traffic"),
+            RunbookStep(4, "Adjust rules if needed", "Add allow rules for legitimate traffic or tighten deny rules for attacks"),
+        ],
+    ),
+    IncidentPlan(
+        name="nsg_rule_change",
+        resource_type="nsg",
+        trigger_condition="Activity Log: NSG rule write/delete operation",
+        severity=Severity.SEV2,
+        description="NSG security rule modified – verify change is authorized",
+        runbook=[
+            RunbookStep(1, "Identify the change", "Review activity log for the specific rule change", automated=True,
+                        command=f"az monitor activity-log list --resource-group {settings.azure_resource_group} --offset 1h --query \"[?contains(resourceId,'networkSecurityGroups')]\""),
+            RunbookStep(2, "Validate security posture", "Ensure no overly permissive rules were added (e.g., 0.0.0.0/0 inbound)"),
+            RunbookStep(3, "Check service connectivity", "Verify App Services and Private Endpoints are not impacted"),
+            RunbookStep(4, "Revert if unauthorized", "Restore previous NSG rules if the change was unplanned"),
+        ],
+    ),
+
+    # ─── Private Endpoints ───
+    IncidentPlan(
+        name="pe_connection_failed",
+        resource_type="private_endpoint",
+        trigger_condition="Private Endpoint connection state != Approved",
+        severity=Severity.SEV1,
+        description="Private Endpoint connection lost or not approved",
+        runbook=[
+            RunbookStep(1, "Check PE status", "Verify private endpoint connection state", automated=True,
+                        command=f"az network private-endpoint list --resource-group {settings.azure_resource_group} --query '[].{{name:name,provisioningState:provisioningState,connections:privateLinkServiceConnections[].{{status:privateLinkServiceConnectionState.status,resource:groupIds}}}}'"),
+            RunbookStep(2, "Check DNS resolution", "Verify private DNS zones resolve the PE FQDN to the private IP"),
+            RunbookStep(3, "Reapprove connection", "Reapprove the private endpoint connection if it was disconnected", automated=True,
+                        command=f"az network private-endpoint-connection list --resource-group {settings.azure_resource_group} --type Microsoft.Storage/storageAccounts --name aistoragemyaacoub"),
+            RunbookStep(4, "Check VNet connectivity", "Ensure the VNet/subnet hosting the PE has proper routing"),
+            RunbookStep(5, "Notify team", "Alert infrastructure team if connection cannot be restored"),
+        ],
+    ),
+    IncidentPlan(
+        name="pe_data_drop",
+        resource_type="private_endpoint",
+        trigger_condition="PEBytesIn drops to 0 for > 10min",
+        severity=Severity.SEV2,
+        description="Private Endpoint data throughput dropped – possible connectivity issue",
+        runbook=[
+            RunbookStep(1, "Check PE connection state", "Verify the private endpoint is still approved and connected", automated=True,
+                        command=f"az network private-endpoint show --name pe-blob-westus2 --resource-group {settings.azure_resource_group} --query '{{provisioningState:provisioningState,connections:privateLinkServiceConnections[].privateLinkServiceConnectionState}}'"),
+            RunbookStep(2, "Check target resource health", "Verify the linked resource (Storage/Cosmos/SQL) is healthy"),
+            RunbookStep(3, "Check DNS resolution", "Ensure private DNS resolves to the correct private IP"),
+            RunbookStep(4, "Review NSG rules", "Confirm NSG on the PE subnet allows required traffic"),
+        ],
+    ),
 ]
 
 

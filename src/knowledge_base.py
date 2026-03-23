@@ -59,6 +59,21 @@ ARCHITECTURE = {
             "description": "AI model hosting (GPT, embeddings) for sales intelligence",
             "dependencies": [],
         },
+        "vnet": {
+            "type": "Azure Virtual Network",
+            "description": "Network isolation for Sales POC resources (mymsx-vnet, vnet-salespoc-westus2)",
+            "dependencies": [],
+        },
+        "nsg": {
+            "type": "Azure Network Security Group",
+            "description": "Network traffic filtering for VNet subnets (app, appservice, private-endpoints)",
+            "dependencies": ["vnet"],
+        },
+        "private_endpoint": {
+            "type": "Azure Private Endpoint",
+            "description": "Private connectivity to Storage, Cosmos DB, and SQL via VNet (pe-blob, pe-cosmos, pe-sql)",
+            "dependencies": ["vnet", "nsg", "storage", "cosmos_db", "sql_db"],
+        },
     },
     "data_flow": [
         "User -> Frontend (Static Web App)",
@@ -69,6 +84,10 @@ ARCHITECTURE = {
         "API -> Storage Account (documents)",
         "API -> AI Foundry (AI inference)",
         "MCP -> API + AI Foundry (tool bridge)",
+        "API -> Private Endpoint (pe-sql-westus2) -> SQL Database",
+        "API -> Private Endpoint (pe-cosmos-westus2) -> Cosmos DB",
+        "API -> Private Endpoint (pe-blob-westus2) -> Storage Account",
+        "NSGs -> VNet subnets (traffic filtering)",
     ],
 }
 
@@ -204,6 +223,62 @@ TROUBLESHOOTING = {
                 "Regenerate SAS tokens if needed",
                 "Verify container access level settings",
                 "Review network rules and private endpoints",
+            ],
+        },
+    },
+    "vnet": {
+        "ddos_attack": {
+            "symptoms": ["IfUnderDDoSAttack metric = 1", "High packet/byte drop rates", "Service degradation"],
+            "causes": ["Volumetric DDoS attack", "Protocol-level attack", "Application-layer attack"],
+            "resolution": [
+                "Verify DDoS Protection Standard is enabled on the VNet",
+                "Review DDoS mitigation reports in Azure Portal",
+                "Check NSG rules to block known attack source IPs",
+                "Contact Azure Support for large-scale attacks",
+                "Enable flow logs to analyze traffic patterns",
+            ],
+        },
+        "connectivity_issues": {
+            "symptoms": ["Services unreachable via VNet", "Subnet routing failures", "Peering down"],
+            "causes": ["NSG blocking traffic", "UDR misconfiguration", "VNet peering disconnected", "Address space conflict"],
+            "resolution": [
+                "Check NSG rules on relevant subnets",
+                "Verify route tables and next-hop configurations",
+                "Check VNet peering status: az network vnet peering list",
+                "Verify address spaces don't overlap between peered VNets",
+            ],
+        },
+    },
+    "nsg": {
+        "rule_misconfiguration": {
+            "symptoms": ["Legitimate traffic blocked", "Unexpected denied flows spike", "Service connectivity lost"],
+            "causes": ["Overly restrictive deny rules", "Missing allow rules", "Priority ordering issues", "Unauthorized rule changes"],
+            "resolution": [
+                "Review NSG effective security rules: az network nsg show",
+                "Check flow logs for denied traffic patterns",
+                "Verify rule priorities (lower number = higher priority)",
+                "Restore rules from ARM template if unauthorized changes detected",
+            ],
+        },
+    },
+    "private_endpoint": {
+        "connection_failure": {
+            "symptoms": ["Private endpoint connection state not Approved", "DNS resolution fails", "Cannot reach linked resource"],
+            "causes": ["Connection manually rejected", "Private DNS zone misconfigured", "NSG blocking PE subnet traffic", "Linked resource deleted/moved"],
+            "resolution": [
+                "Check PE connection state: az network private-endpoint show",
+                "Verify private DNS zone records resolve to correct private IP",
+                "Ensure NSG on PE subnet allows traffic to linked resource",
+                "Re-create private endpoint connection if rejected",
+            ],
+        },
+        "dns_resolution": {
+            "symptoms": ["Public IP returned instead of private IP", "Connection timeouts from VNet"],
+            "causes": ["Private DNS zone not linked to VNet", "DNS record missing", "Custom DNS server not forwarding"],
+            "resolution": [
+                "Verify private DNS zone is linked to the VNet",
+                "Check A records in private DNS zone for the PE",
+                "If using custom DNS, ensure conditional forwarding to Azure DNS (168.63.129.16)",
             ],
         },
     },

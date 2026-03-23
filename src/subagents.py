@@ -19,6 +19,7 @@ class SubagentType(str, Enum):
     FRONTEND = "frontend"
     SECURITY = "security"
     COST = "cost"
+    NETWORK = "network"
 
 
 @dataclass
@@ -304,6 +305,50 @@ class CostSubagent(BaseSubagent):
         return self._create_result("cost", findings, recommendations)
 
 
+class NetworkSubagent(BaseSubagent):
+    """Monitors VNet, NSG, and Private Endpoint health."""
+
+    async def analyze(self) -> SubagentResult:
+        findings = []
+        recommendations = []
+        incidents = []
+
+        # VNet health
+        vnet_health = await self._monitor.async_query_resource(ResourceType.VNET)
+        if vnet_health.status == HealthStatus.UNHEALTHY:
+            findings.append(f"VNet CRITICAL: {vnet_health.message}")
+            for plan in self._incident_mgr.get_plans_for_resource("vnet"):
+                inc = self._incident_mgr.create_incident(plan.name, metadata={"source": "network_subagent"})
+                incidents.append(inc.id)
+        elif vnet_health.status == HealthStatus.DEGRADED:
+            findings.append(f"VNet degraded: {vnet_health.message}")
+
+        for m in vnet_health.metrics:
+            if m.name == "IfUnderDDoSAttack" and m.value and m.value >= 1:
+                findings.append("VNet is under DDoS attack!")
+                recommendations.append("Enable DDoS Protection Standard and review mitigation policies")
+            if m.name == "PacketsDroppedDDoS" and m.value and m.value > 0:
+                findings.append(f"DDoS packets dropped: {m.value:.0f}")
+
+        # NSG checks (activity-log based, report known NSG status)
+        from src.monitors import NSG_MONITORED_RESOURCES
+        from src.config import settings
+        findings.append(f"Monitoring {len(NSG_MONITORED_RESOURCES)} NSGs")
+        for nsg_name in settings.nsg_names:
+            recommendations.append(f"Verify NSG flow logs are enabled on {nsg_name}")
+
+        # Private Endpoint checks
+        from src.monitors import PE_MONITORED_RESOURCES
+        findings.append(f"Monitoring {len(PE_MONITORED_RESOURCES)} Private Endpoints")
+        for pe_name in settings.private_endpoint_names:
+            recommendations.append(f"Verify private DNS resolution for {pe_name}")
+
+        if not any("CRITICAL" in f or "DDoS" in f for f in findings):
+            findings.append("Network resources healthy")
+
+        return self._create_result("network", findings, recommendations, incidents)
+
+
 class SubagentOrchestrator:
     """Orchestrates all subagents and aggregates results."""
 
@@ -315,6 +360,7 @@ class SubagentOrchestrator:
         self.frontend = FrontendSubagent(monitor, incident_mgr)
         self.security = SecuritySubagent(monitor, incident_mgr, github)
         self.cost = CostSubagent(monitor, incident_mgr)
+        self.network = NetworkSubagent(monitor, incident_mgr)
 
     async def run_all(self) -> dict:
         """Run all subagents and return aggregated results."""
@@ -326,6 +372,7 @@ class SubagentOrchestrator:
             ("frontend", self.frontend),
             ("security", self.security),
             ("cost", self.cost),
+            ("network", self.network),
         ]:
             try:
                 result = await agent.analyze()
@@ -351,5 +398,6 @@ class SubagentOrchestrator:
             SubagentType.FRONTEND: self.frontend,
             SubagentType.SECURITY: self.security,
             SubagentType.COST: self.cost,
+            SubagentType.NETWORK: self.network,
         }
         return await agent_map[agent_type].analyze()

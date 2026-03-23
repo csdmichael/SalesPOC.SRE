@@ -55,7 +55,7 @@ Review the agent's configuration in the **Settings** tab:
 | **Model** | Automatic (Anthropic) | AI model selection |
 | **Monthly Unit Limit** | 50,000 | Budget guardrail |
 | **Upgrade Channel** | Stable | |
-| **Managed Resources** | 8 Azure resources + subscription + RG | Full resource list below |
+| **Managed Resources** | 16 Azure resources + subscription + RG | Full resource list below |
 
 **Managed resources:**
 
@@ -69,6 +69,14 @@ Review the agent's configuration in the **Settings** tab:
 | AI Foundry | `001-ai-poc` |
 | App Service (Frontend) | `SalesPOC` |
 | App Service Plan | `ASP-aimyaacoub-87dc` |
+| VNet | `mymsx-vnet` |
+| VNet | `vnet-salespoc-westus2` |
+| NSG | `mymsx-vnet-app-subnet-nsg-westus2` |
+| NSG | `vnet-salespoc-westus2-snet-appservice-nsg-westus2` |
+| NSG | `vnet-salespoc-westus2-snet-private-endpoints-nsg-westus2` |
+| Private Endpoint | `pe-blob-westus2` |
+| Private Endpoint | `pe-cosmos-westus2` |
+| Private Endpoint | `pe-sql-westus2` |
 
 ---
 
@@ -110,7 +118,7 @@ This tells the agent to receive incidents from Azure Monitor alert webhooks.
 
 ### 4.2 Configure Azure Monitor Metrics & Alerts
 
-The agent watches 7 resources via **18 metric alert rules** deployed through [infra/alerts.bicep](infra/alerts.bicep). Each rule evaluates a metric threshold and fires into the `sre-ai-my-ag` action group, which POSTs a webhook to the agent.
+The agent watches 15 resources via **23 metric alert rules + 2 activity-log alert rules** deployed through [infra/alerts.bicep](infra/alerts.bicep). Each rule evaluates a metric threshold (or activity-log event) and fires into the `sre-ai-my-ag` action group, which POSTs a webhook to the agent and sends an email notification to `myaacoub@microsoft.com`.
 
 ```mermaid
 flowchart LR
@@ -129,6 +137,9 @@ flowchart LR
 | `sre-sql-cpu-high` | ai-db-poc | CPU > 90% | 2 |
 | `sre-cosmos-throttling` | cosmos-ai-poc | 429 responses > 50 in 5 min | 2 |
 | `sre-apim-auth-spike` | apim-poc-my | Unauthorized > 100 in 5 min | 2 |
+| `sre-vnet0-ddos-attack` | mymsx-vnet | DDoS attack detected | 1 |
+| `sre-nsg-rule-change` | All NSGs | NSG rule modified (activity log) | 2 |
+| `sre-pe-blob-bytes-drop` | pe-blob-westus2 | PE data throughput dropped | 2 |
 
 **Demo:** Open Azure Monitor → Alerts → show the alert rules and action group. Click into one rule to show the metric threshold, evaluation window, and webhook action.
 
@@ -146,7 +157,7 @@ The agent receives the Common Alert Schema payload, extracts the alert rule name
 
 ### 4.4 Implement Incident Response Plans
 
-Navigate to **Incident Playground → Handlers** and **Filters** in the agent portal. There are **17 incident response plans**, each with a filter that matches on the alert name.
+Navigate to **Incident Playground → Handlers** and **Filters** in the agent portal. There are **24 incident response plans**, each with a filter that matches on the alert name.
 
 **Key plans to demo:**
 
@@ -178,6 +189,12 @@ Navigate to **Incident Playground → Handlers** and **Filters** in the agent po
 | AI Foundry Errors | 2 | — |
 | AI Foundry Latency | 3 | — |
 | Frontend HTTP Errors | 2 | — |
+| VNet DDoS Attack | 1 | — |
+| VNet Config Change | 3 | — |
+| NSG Denied Flows Spike | 2 | — |
+| NSG Rule Change | 2 | — |
+| PE Connection Failed | 1 | — |
+| PE Data Drop | 2 | — |
 
 **Demo walkthrough — API 5xx Spike scenario:**
 
@@ -201,20 +218,21 @@ This section covers how the agent proactively monitors infrastructure and produc
 
 ### 5.1 Scheduled Tasks
 
-Navigate to **Scheduled Tasks** in the agent portal. Six tasks run on cron schedules:
+Navigate to **Scheduled Tasks** in the agent portal. Seven tasks run on cron schedules:
 
 | Task | Schedule | What It Does |
 |---|---|---|
 | **Health Check** | Every 5 min | Full health check of all monitored resources including SQL DB, Cosmos DB, Storage, API, APIM, AI Foundry, and Frontend. Checks CPU, memory, availability, error rates, and connection health. |
-| **Subagent Analysis** | Every 15 min | Runs 6 specialized subagents (Database, API, AI, Frontend, Security, Cost) for deep-dive analysis |
+| **Network Health Check** | Every 5 min | Checks health of VNets (DDoS status), NSGs (rule integrity), and Private Endpoints (connection state and data throughput) across all network resources. |
+| **Subagent Analysis** | Every 15 min | Runs 7 specialized subagents (Database, API, AI, Frontend, Security, Cost, Network) for deep-dive analysis |
 | **Security Scan** | Every 15 min | Scans for unauthorized access spikes, misconfigured RBAC, exposed secrets, firewall issues |
 | **GitHub Repo Check** | Every 1 hour | Checks CI/CD status, open PRs, high-priority issues, and dependency alerts across all repos |
 | **Cost Analysis** | Every 6 hours | Reviews spending vs budget, identifies idle resources, right-sizing opportunities |
-| **Daily SRE Report** | 8 AM UTC | 24-hour summary: health, incidents, metrics, alerts, GitHub activity, cost trends |
+| **Daily SRE Report** | 8 AM UTC | 24-hour summary: health, incidents, metrics, alerts, GitHub activity, cost trends, network status |
 
 **Demo:** Open a task → show the cron schedule, prompt, and last execution result. Trigger the **Health Check** manually to show real-time output.
 
-**Subagents** — Six specialized subagents used by the Subagent Analysis task:
+**Subagents** — Seven specialized subagents used by the Subagent Analysis task:
 
 ```mermaid
 graph LR
@@ -224,13 +242,14 @@ graph LR
     SRE --> FE[Frontend<br/>App Service + Storage]
     SRE --> SEC[Security<br/>All Resources]
     SRE --> COST[Cost<br/>All Resources]
+    SRE --> NET[Network<br/>VNets + NSGs + PEs]
 ```
 
 ### 5.2 Agent Canvas
 
 Navigate to the **Canvas** tab in the agent portal. The canvas provides:
 
-- **Resource health dashboard** — Live status of all 8 managed resources with key metrics
+- **Resource health dashboard** — Live status of all 16 managed resources with key metrics
 - **Incident timeline** — Visual history of incidents, resolutions, and RCA reports
 - **Root Cause Analysis (RCA)** — After an incident resolves, the agent produces an RCA with:
   - What happened (alert details, timeline)
@@ -264,6 +283,7 @@ graph TB
             FE_SA[Frontend Subagent]
             SEC_SA[Security Subagent]
             COST_SA[Cost Subagent]
+            NET_SA[Network Subagent]
         end
 
         KB[Knowledge Base]
@@ -273,7 +293,7 @@ graph TB
 
     subgraph AzMon["Azure Monitor"]
         AG[Action Group<br/>sre-ai-my-ag]
-        AR[18 Metric Alert Rules]
+        AR[23 Metric + 2 Activity-Log Alert Rules]
     end
 
     subgraph Azure["Monitored Azure Resources"]
@@ -284,6 +304,9 @@ graph TB
         APIM[API Management]
         FOUNDRY[AI Foundry]
         FE[Frontend App Service]
+        VNET[VNets]
+        NSG[NSGs]
+        PE[Private Endpoints]
     end
 
     subgraph GitHub["GitHub Repos"]
@@ -309,8 +332,12 @@ graph TB
     AR -.evaluates.-> APIM
     AR -.evaluates.-> FOUNDRY
     AR -.evaluates.-> FE
+    AR -.evaluates.-> VNET
+    AR -.evaluates.-> NSG
+    AR -.evaluates.-> PE
     AR --fires--> AG
     AG --webhook POST--> WH
+    AG --email--> EMAIL[myaacoub@microsoft.com]
     WH --> IM
 
     DB_SA --> SQL
@@ -320,6 +347,9 @@ graph TB
     AI_SA --> FOUNDRY
     FE_SA --> FE
     FE_SA --> STORAGE
+    NET_SA --> VNET
+    NET_SA --> NSG
+    NET_SA --> PE
 
     MON --> SQL
     MON --> COSMOS
@@ -328,6 +358,9 @@ graph TB
     MON --> APIM
     MON --> FOUNDRY
     MON --> FE
+    MON --> VNET
+    MON --> NSG
+    MON --> PE
 
     GH --> UI_R
     GH --> API_R
@@ -352,7 +385,7 @@ build            → Lint, build Docker image, push to GHCR
 deploy-agent     → Deploy Bicep (Container App + identity + RBAC)
                    Provision connectors (AzureMonitor, ResourceGraph, GitHub)
                    Configure managed resources + feature flags
-deploy-monitoring → Deploy 18 alert rules + action group webhook
+deploy-monitoring → Deploy 23 metric alert rules + 2 activity-log alerts + action group (webhook + email)
 ```
 
 Required GitHub secrets:
@@ -401,6 +434,9 @@ python -m src.main
 | APIM | 99.95% | 1000ms |
 | AI Foundry | 99.9% | 3000ms |
 | Frontend | 99.95% | 200ms |
+| VNets | 99.99% | — |
+| NSGs | 99.99% | — |
+| Private Endpoints | 99.99% | — |
 
 ---
 
@@ -411,7 +447,7 @@ python -m src.main
 ├── infra/
 │   ├── main.bicep                 # Container App, Log Analytics, Identity, RBAC
 │   ├── main.bicepparam            # Bicep parameters
-│   ├── alerts.bicep               # 18 Azure Monitor alert rules + action group
+│   ├── alerts.bicep               # 23 metric + 2 activity-log alert rules + action group
 │   └── provision-agent-api.sh     # Provisions tasks, incident plans & repos (manual, one-time)
 ├── src/
 │   ├── agent.py                   # SRE agent core + webhook processing
@@ -424,7 +460,7 @@ python -m src.main
 │   ├── monitors.py                # Azure Monitor queries (async via thread pool)
 │   ├── scheduler.py               # Async scheduled task runner
 │   ├── server.py                  # aiohttp webhook + health endpoints
-│   └── subagents.py               # 6 specialized analysis subagents
+│   └── subagents.py               # 7 specialized analysis subagents
 ├── Dockerfile
 ├── requirements.txt
 └── .env.example
@@ -446,9 +482,9 @@ python -m src.main
 | **Managed Identity** | `sre-ai-my-identity` |
 | **ARM Resource Type** | `Microsoft.App/agents` (API version `2025-05-01-preview`) |
 
-### Alert Rules (18 total)
+### Alert Rules (25 total: 23 metric + 2 activity-log)
 
-All rules evaluate every 5 minutes with a 5-minute window. Action group `sre-ai-my-ag` sends webhooks to the agent.
+All metric rules evaluate every 5 minutes with a 5-minute window (unless noted). Activity-log rules trigger on resource write operations. Action group `sre-ai-my-ag` sends webhooks to the agent and email to `myaacoub@microsoft.com`.
 
 | Alert Rule | Resource | Metric | Condition | Sev |
 |---|---|---|---|---|
@@ -470,6 +506,13 @@ All rules evaluate every 5 minutes with a 5-minute window. Action group `sre-ai-
 | `sre-foundry-high-error-rate` | AI Foundry | Total errors | > 20 | 2 |
 | `sre-foundry-high-latency` | AI Foundry | Latency | > 5000ms | 3 |
 | `sre-frontend-http-errors` | Frontend | Http5xx | > 20 | 2 |
+| `sre-vnet0-ddos-attack` | mymsx-vnet | IfUnderDDoSAttack | >= 1 | 1 |
+| `sre-vnet1-ddos-attack` | vnet-salespoc-westus2 | IfUnderDDoSAttack | >= 1 | 1 |
+| `sre-pe-blob-bytes-drop` | pe-blob-westus2 | PEBytesIn | <= 0 (15min window) | 2 |
+| `sre-pe-cosmos-bytes-drop` | pe-cosmos-westus2 | PEBytesIn | <= 0 (15min window) | 2 |
+| `sre-pe-sql-bytes-drop` | pe-sql-westus2 | PEBytesIn | <= 0 (15min window) | 2 |
+| `sre-vnet-config-change` | All VNets | Activity Log | VNet write operation | 3 |
+| `sre-nsg-rule-change` | All NSGs | Activity Log | NSG write operation | 2 |
 
 ### Metric Thresholds
 
@@ -544,6 +587,35 @@ All rules evaluate every 5 minutes with a 5-minute window. Action group `sre-ai-
 |---|---|---|
 | Response Time | 1.0s | 3.0s |
 | Server Errors (5xx) | 5 | 20 |
+</details>
+
+<details>
+<summary>VNets</summary>
+
+| Metric | Warning | Critical |
+|---|---|---|
+| DDoS Attack | 1 (active) | 1 (active) |
+| DDoS Bytes Dropped | — | — |
+| DDoS Packets Dropped | — | — |
+</details>
+
+<details>
+<summary>NSGs</summary>
+
+| Metric | Warning | Critical |
+|---|---|---|
+| Denied Flows | 50 | 200 |
+| Rule Changes | Activity Log alert | Activity Log alert |
+</details>
+
+<details>
+<summary>Private Endpoints</summary>
+
+| Metric | Warning | Critical |
+|---|---|---|
+| Bytes In | — | 0 (15min window) |
+| Bytes Out | — | — |
+| Connection State | — | != Approved |
 </details>
 
 ### IAM Roles
