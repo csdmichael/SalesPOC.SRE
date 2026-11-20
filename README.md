@@ -1,9 +1,39 @@
 # SRE Agent Demo: sre-ai-my
 
+## Table of Contents
+
+- [1. SRE Agent Overview](#1-sre-agent-overview)
+- [2. Presentation and Live Demo Resources](#2-presentation-and-live-demo-resources)
+- [Prerequisites](#prerequisites)
+- [Part 1 — Connectors](#part-1--connectors)
+- [Part 2 — Settings](#part-2--settings)
+- [Part 3 — Agent Chat](#part-3--agent-chat)
+- [Part 4 — Incident Response](#part-4--incident-response)
+- [Part 5 — Infrastructure Reporting (RCA, Resource Health Reports)](#part-5--infrastructure-reporting-rca-resource-health-reports)
+- [Architecture](#architecture)
+- [Deployment Reference](#deployment-reference)
+- [Project Structure](#project-structure)
+- [Reference](#reference)
+- [License](#license)
+
+## 1. SRE Agent Overview
+
 A step-by-step demo walkthrough for the Azure SRE Agent that monitors, diagnoses, and remediates issues across the Sales POC infrastructure.
+
+The agent connects to Azure Monitor, Azure Resource Graph, and GitHub to investigate resource health, diagnose incidents, and propose or execute remediation actions. It supports interactive chat, incident response plans, scheduled health checks, specialized subagents, and infrastructure reporting.
 
 **Agent endpoint:** `https://sre-ai-my--0cad75dc.4650bed8.eastus2.azuresre.ai`
 **Monitored application:** [https://salespoc.azurewebsites.net](https://salespoc.azurewebsites.net)
+
+## 2. Presentation and Live Demo Resources
+
+| Session | Resource | Link |
+|---|---|---|
+| SRE Agent Presentation of Capabilities | Video (31 min) | [Watch presentation](https://1drv.ms/v/c/4673b287399127d4/IQApkd7HCshxQ6-3D21ojbvvAbIBGwohgvI3vUUxBRmo31A?e=fqen5I) |
+| SRE Agent Presentation of Capabilities | Transcript | [Read presentation transcript](https://1drv.ms/b/c/4673b287399127d4/IQAJ7JWNnTYDQJ5bY0R-S49JAcI3AuQaZOZrgFd2qlfGMXk?e=sO7a8Z) |
+| SRE Agent Presentation of Capabilities | Presentation slides (PDF) | [Azure SRE Agent - Capabilities, Architecture and Ignite 2026 Update](docs/SRE%20Agent%20Demo%20and%20PPT/Azure%20SRE%20Agent%20-%20Capabilities%2C%20Architecture%20and%20Ignite%202026%20Update.pdf) |
+| SRE Agent Live Demo | Video (20 min) | [Watch live demo](https://1drv.ms/v/c/4673b287399127d4/IQArajtH0MwbSIkifJOQ-A5VAfIj7TSDagmipJmjixQvJ04?e=Q5h0hf) |
+| SRE Agent Live Demo | Transcript | [Read live demo transcript](https://1drv.ms/b/c/4673b287399127d4/IQCJHkZCqTEsS5CBHJnyCA4IASwAj3jrbo2mlEtHIZHCPvc?e=a5gTfq) |
 
 ---
 
