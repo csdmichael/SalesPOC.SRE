@@ -30,6 +30,7 @@ The agent connects to Azure Monitor, Azure Resource Graph, and GitHub to investi
 
 | Session | Resource | Link |
 |---|---|---|
+| SRE Agent Overview | Video | [SRE Agent-Overview.mp4](https://1drv.ms/v/c/4673b287399127d4/IQBQo-qVLKOnTLUL3SOWLAsWASppbeIy1Yt4xSrVdvivNV8?e=HLIukA) |
 | SRE Agent Interactive Showcase | Web Application | [Open SRE Agent Showcase](https://salespoc-sre-showcase.azurewebsites.net) |
 | SRE Agent Presentation of Capabilities | Video (31 min) | [Watch presentation](https://1drv.ms/v/c/4673b287399127d4/IQApkd7HCshxQ6-3D21ojbvvAbIBGwohgvI3vUUxBRmo31A?e=fqen5I) |
 | SRE Agent Presentation of Capabilities | Transcript | [Read presentation transcript](https://1drv.ms/b/c/4673b287399127d4/IQAJ7JWNnTYDQJ5bY0R-S49JAcI3AuQaZOZrgFd2qlfGMXk?e=sO7a8Z) |
