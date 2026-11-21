@@ -24,11 +24,13 @@ The agent connects to Azure Monitor, Azure Resource Graph, and GitHub to investi
 
 **Agent endpoint:** `https://sre-ai-my--0cad75dc.4650bed8.eastus2.azuresre.ai`
 **Monitored application:** [https://salespoc.azurewebsites.net](https://salespoc.azurewebsites.net)
+**Showcase UI website:** [https://salespoc-sre-showcase.azurewebsites.net](https://salespoc-sre-showcase.azurewebsites.net)
 
 ## 2. Presentation and Live Demo Resources
 
 | Session | Resource | Link |
 |---|---|---|
+| SRE Agent Interactive Showcase | Web Application | [Open SRE Agent Showcase](https://salespoc-sre-showcase.azurewebsites.net) |
 | SRE Agent Presentation of Capabilities | Video (31 min) | [Watch presentation](https://1drv.ms/v/c/4673b287399127d4/IQApkd7HCshxQ6-3D21ojbvvAbIBGwohgvI3vUUxBRmo31A?e=fqen5I) |
 | SRE Agent Presentation of Capabilities | Transcript | [Read presentation transcript](https://1drv.ms/b/c/4673b287399127d4/IQAJ7JWNnTYDQJ5bY0R-S49JAcI3AuQaZOZrgFd2qlfGMXk?e=sO7a8Z) |
 | SRE Agent Presentation of Capabilities | Presentation slides (PDF) | [Azure SRE Agent - Capabilities, Architecture and Ignite 2026 Update](docs/SRE%20Agent%20Demo%20and%20PPT/Azure%20SRE%20Agent%20-%20Capabilities%2C%20Architecture%20and%20Ignite%202026%20Update.pdf) |
